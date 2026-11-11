@@ -1,535 +1,1616 @@
+/* ==========================================================================
+   QUIXOTIC // EMERALD FINTECH & SOFT BENTO SAAS DESIGN SYSTEM
+   Theme: Airy Soft-Bento, Deep Emerald Pine (#137A4B), Alabaster Canvas (#F4F6F5)
+   Inspired by: quixotic-emerald-fintech-bento.md
+   ========================================================================== */
+
 /* ========================================== */
-/* 1. VARIABEL & RESET DASAR                  */
+/* 1. SISTEM TOKEN WARNA & VARIABEL           */
 /* ========================================== */
 :root {
-    /* Skema Warna Utama */
-    --primary-color: #2e7d32;      /* Hijau Segar */
-    --primary-dark: #1b5e20;
-    --secondary-color: #0288d1;    /* Biru Aksen */
-    --bg-color: #f4f6f8;
-    --surface-color: #ffffff;
-    --text-primary: #212121;
-    --text-secondary: #666666;
-    --border-color: #e0e0e0;
-  
-    /* Aturan Warna Kedaluwarsa & Peringatan */
-    --status-black: #212121;       /* Hitam (< 0 Bulan) */
-    --status-red: #d32f2f;         /* Merah (0 - 3 Bulan) */
-    --status-yellow: #f57c00;      /* Kuning (3 - 12 Bulan) */
-    --status-green: #388e3c;       /* Hijau (> 1 Tahun) */
-  
-    /* Font & Bayangan */
-    --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-    --radius-sm: 6px;
-    --radius-md: 10px;
-  }
-  
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  body {
-    font-family: var(--font-main);
-    background-color: var(--bg-color);
-    color: var(--text-primary);
-    line-height: 1.5;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-  .login-wrapper {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #0288d1 100%);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    padding: 20px;
-  }
-  
-  .login-wrapper > h1,
-  .login-wrapper > p,
-  .login-wrapper > form {
-    width: 100%;
-    max-width: 420px;
-    background-color: #ffffff;
-    padding-left: 35px;
-    padding-right: 35px;
-  }
-  
-  .login-wrapper > h1 {
-    padding-top: 35px;
-    border-radius: 16px 16px 0 0;
-    margin: 0;
-    font-size: 28px;
-    color: #1e3a8a;
-    font-weight: 700;
-    text-align: center;
-  }
-  
-  .login-wrapper > p {
-    padding-top: 8px;
-    padding-bottom: 24px;
-    margin: 0;
-    color: #6b7280;
-    font-size: 14px;
-    text-align: center;
-  }
-  
-  .login-wrapper > form {
-    padding-bottom: 35px;
-    border-radius: 0 0 16px 16px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
-  }
-  
+  /* Permukaan & Latar Belakang (Surfaces) */
+  --bg-outer-frame: #E3E5EA;
+  --bg-app-canvas: #F4F6F5;       /* Alabaster Sage-Grey */
+  --bg-card-white: #FFFFFF;       /* Pure White Bento Cards */
+  --bg-nested-subtle: #F5F7F6;    /* Soft Pill / Inner Track */
+  --border-hairline: #E8ECEA;     /* Hairline Border */
 
-/* ==========================================================================
-   3. FORM GROUP & INPUT FIELD
-   ========================================================================== */
+  /* Aksen Hijau Zamrud & Mint (Emerald & Mint Accents) */
+  --emerald-primary: #137A4B;      /* Deep Emerald Pine */
+  --emerald-gradient-start: #178A56;
+  --emerald-gradient-end: #0E633C;
+  --sage-bar-muted: #88B99F;       /* Soft Sage Bar */
+  --mint-badge-bg: #22A467;        /* Vibrant Mint Badge */
+  --status-success-bg: #EBF8F1;
+  --status-success-ink: #158050;
+
+  /* Tipografi & Hirarki Tinta (Ink Hierarchy) */
+  --ink-charcoal: #111814;        /* Bold headings, major numerals */
+  --ink-secondary: #525D56;       /* Subtext, secondary labels */
+  --ink-muted: #8A948E;           /* Muted text, split decimals */
+  --ink-on-emerald: #FFFFFF;
+
+  /* Aturan Warna Kedaluwarsa & Peringatan */
+  --status-black: #111814;
+  --status-red: #DC2626;
+  --status-yellow: #D97706;
+  --status-green: #158050;
+
+  /* Tipografi */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Sudut Kelengkungan (Soft Bento & Stadium Radii) */
+  --radius-bento: 26px;
+  --radius-card-sm: 18px;
+  --radius-pill: 999px;
+  --radius-input: 14px;
+
+  /* Bayangan Difus Halus (Soft Diffuse Shadows) */
+  --shadow-subtle: 0 4px 14px rgba(17, 24, 20, 0.03);
+  --shadow-bento: 0 10px 30px rgba(17, 24, 20, 0.04);
+  --shadow-card-hover: 0 16px 36px rgba(17, 24, 20, 0.07);
+  --shadow-float: 0 20px 48px rgba(17, 24, 20, 0.08);
+  --shadow-emerald: 0 8px 22px rgba(19, 122, 75, 0.28);
+}
+
+/* Reset Dasar */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app-canvas);
+  color: var(--ink-charcoal);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* ========================================== */
+/* 2. LOGIN SCREEN (SOFT-BENTO AUTHENTICATION)*/
+/* ========================================== */
+.login-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-app-canvas);
+  background-image: 
+    radial-gradient(circle at 18% 22%, rgba(23, 138, 86, 0.10) 0%, transparent 45%),
+    radial-gradient(circle at 82% 78%, rgba(136, 185, 159, 0.14) 0%, transparent 50%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 24px;
+}
+
+.login-card-bento {
+  width: 100%;
+  max-width: 440px;
+  background-color: var(--bg-card-white);
+  border: 1px solid var(--border-hairline);
+  border-radius: 30px;
+  padding: 42px 36px;
+  box-shadow: var(--shadow-float);
+  text-align: center;
+}
+
+.login-brand-emblem {
+  width: 58px;
+  height: 58px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(135deg, var(--emerald-gradient-start), var(--emerald-gradient-end));
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin: 0 auto 18px;
+  box-shadow: var(--shadow-emerald);
+}
+
+.login-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink-charcoal);
+  margin-bottom: 6px;
+}
+
+.login-title-accent {
+  color: var(--emerald-primary);
+  font-weight: 800;
+}
+
+.login-subtitle {
+  color: var(--ink-secondary);
+  font-size: 0.9rem;
+  margin-bottom: 28px;
+}
+
 .form-group {
-    margin-bottom: 20px;
-    text-align: left;
+  margin-bottom: 18px;
+  text-align: left;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #4b5563;
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--ink-secondary);
+  letter-spacing: 0.01em;
 }
 
 .form-group input, 
 .form-group select {
-    width: 100%;
-    padding: 12px 16px; /* Padding tebal untuk kenyamanan sentuhan/ketikan */
-    font-size: 16px;
-    border: 2px solid #e5e7eb;
-    border-radius: 8px;
-    background-color: #f9fafb;
-    box-sizing: border-box;
-    transition: all 0.2s ease;
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-family: var(--font-sans);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-input);
+  background-color: #F8FAF9;
+  color: var(--ink-charcoal);
+  transition: all 0.2s ease;
 }
 
-/* Efek interaktif saat kolom input diklik */
 .form-group input:focus, 
 .form-group select:focus {
-    outline: none;
-    border-color: #3b82f6;
-    background-color: #ffffff;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+  outline: none;
+  border-color: var(--emerald-primary);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(19, 122, 75, 0.14);
 }
 
-/* ==========================================================================
-   4. TOMBOL AKSES MASUK
-   ========================================================================== */
 .btn-login {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #ffffff;
-    background-color: #1e3a8a;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    margin-top: 10px;
-    letter-spacing: 0.5px;
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, var(--emerald-gradient-start) 0%, var(--emerald-gradient-end) 100%);
+  border: none;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-top: 10px;
+  box-shadow: var(--shadow-emerald);
+  letter-spacing: 0.02em;
 }
 
 .btn-login:hover {
-    background-color: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(19, 122, 75, 0.35);
+  opacity: 0.96;
+}
+
+.error-box {
+  color: #DC2626;
+  background-color: #FEF2F2;
+  border: 1px solid #FECACA;
+  padding: 12px 16px;
+  border-radius: var(--radius-card-sm);
+  font-size: 0.85rem;
+  margin-top: 18px;
+  display: none;
+}
+
+/* ========================================== */
+/* 3. APP SHELL & FLOATING PILL SIDEBAR       */
+/* ========================================== */
+#main-content {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-app-canvas);
+}
+
+.menu-toggle {
+  display: none;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 1050;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--emerald-gradient-start), var(--emerald-gradient-end));
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-emerald);
+}
+
+/* Floating Sidebar Capsule */
+.sidebar {
+  width: 270px;
+  background-color: var(--bg-card-white);
+  border: 1px solid var(--border-hairline);
+  border-radius: 28px;
+  position: fixed;
+  top: 20px;
+  bottom: 20px;
+  left: 20px;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 100;
+  overflow-y: auto;
+  box-shadow: var(--shadow-bento);
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 6px;
+}
+
+.brand-emblem {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--emerald-gradient-start), var(--emerald-gradient-end));
+  color: #FFFFFF;
+  font-weight: 800;
+  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-emerald);
+  flex-shrink: 0;
+}
+
+.brand-text-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink-charcoal);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.brand-sub {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+
+/* User Profile in Sidebar */
+.user-profile {
+  background-color: var(--bg-nested-subtle);
+  border: 1px solid var(--border-hairline);
+  padding: 14px;
+  border-radius: 20px;
+}
+
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.sidebar-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--emerald-primary);
+  flex-shrink: 0;
+}
+
+.user-profile-info {
+  overflow: hidden;
+}
+
+.user-name-label {
+  font-size: 0.85rem;
+  color: var(--ink-charcoal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-name-label strong {
+  font-weight: 700;
+}
+
+.badge {
+  display: inline-block;
+  background-color: var(--status-success-bg);
+  color: var(--status-success-ink);
+  border: 1px solid rgba(21, 128, 80, 0.15);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+/* Lencana Peran Pengguna (Konsisten Ukuran & Kontras Tinggi) */
+.badge-role {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  height: 26px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  text-align: center;
+  white-space: nowrap;
+  box-sizing: border-box;
+  background-color: #F1F5F9;
+  color: #475569;
+  border: 1px solid #CBD5E1;
+}
+
+.badge-role.admin {
+  background-color: #EFF6FF;
+  color: #1D4ED8;
+  border: 1px solid rgba(29, 78, 216, 0.25);
+}
+
+.badge-role.staff,
+.badge-role.staf {
+  background-color: #EBF8F1;
+  color: #158050;
+  border: 1px solid rgba(21, 128, 80, 0.25);
+}
+
+.user-profile-details {
+  border-top: 1px dashed var(--border-hairline);
+  padding-top: 8px;
+  margin-top: 6px;
+}
+
+.shift-info {
+  font-size: 0.76rem;
+  color: var(--ink-secondary);
+  line-height: 1.4;
+}
+
+/* Nav Menu (Stadium Pills) */
+.nav-menu {
+  flex-grow: 1;
+}
+
+.nav-menu ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-menu a {
+  text-decoration: none;
+  color: var(--ink-secondary);
+  padding: 11px 16px;
+  border-radius: var(--radius-pill);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.nav-icon {
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+/* Modern Geometric Icons (Clean, Consistent Stroke, Enterprise Look) */
+.modern-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  stroke-width: 1.85;
+}
+
+.nav-menu a .modern-icon {
+  stroke: currentColor;
+  transition: stroke 0.2s ease, transform 0.2s ease;
+}
+
+.nav-menu a:hover .modern-icon {
+  stroke: var(--emerald-primary);
+}
+
+.nav-menu a.active .modern-icon {
+  stroke: #FFFFFF;
+}
+
+.top-pill-item .modern-icon {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-secondary);
+  stroke: currentColor;
+}
+
+.alert-svg-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke: #D97706;
+  color: #D97706;
+}
+
+.nav-menu a:hover {
+  background-color: var(--bg-nested-subtle);
+  color: var(--emerald-primary);
+}
+
+.nav-menu a.active {
+  background: linear-gradient(135deg, var(--emerald-gradient-start), var(--emerald-gradient-end));
+  color: #FFFFFF;
+  box-shadow: var(--shadow-emerald);
+}
+
+/* ========================================== */
+/* 4. KONTEN UTAMA & TOP GREETING BAR         */
+/* ========================================== */
+.main-content {
+  margin-left: 300px;
+  padding: 24px 32px 50px;
+  flex-grow: 1;
+  max-width: calc(100vw - 320px);
+}
+
+/* Top Floating Bar */
+.top-floating-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.hero-greeting {
+  font-size: clamp(24px, 2.2vw, 32px);
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+
+.greeting-lead {
+  font-weight: 800;
+  color: var(--ink-charcoal);
+}
+
+.greeting-user {
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+.greeting-sub {
+  color: var(--ink-secondary);
+  font-size: 0.88rem;
+  margin-top: 4px;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.top-pill-item {
+  background-color: var(--bg-card-white);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--ink-charcoal);
+  box-shadow: var(--shadow-subtle);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--mint-badge-bg);
+  box-shadow: 0 0 0 3px rgba(34, 164, 103, 0.2);
+}
+
+/* Alert Bar */
+.top-alert-bar {
+  background-color: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--radius-pill);
+  padding: 10px 20px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.alert-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.88rem;
+}
+
+.alert-text {
+  color: #B45309;
+}
+
+.btn-close-alert {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #B45309;
+}
+
+/* Section Header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.section-header h1 {
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink-charcoal);
+}
+
+.section-sub {
+  color: var(--ink-secondary);
+  font-size: 0.88rem;
+  margin-top: 2px;
+}
+
+/* ========================================== */
+/* 5. BENTO CARDS & STATISTIK SAAS            */
+/* ========================================== */
+.card {
+  background-color: var(--bg-card-white);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-bento);
+  padding: 24px 28px;
+  box-shadow: var(--shadow-bento);
+  margin-bottom: 22px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.card h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink-charcoal);
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--ink-charcoal);
+}
+
+/* Bento Grid System */
+.bento-stats-grid,
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.bento-stat-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.bento-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.bento-card-sub {
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+
+.bento-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-nested-subtle);
+  border: 1px solid var(--border-hairline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--ink-secondary);
+}
+
+.metric-number {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--ink-charcoal);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  margin: 10px 0 14px;
+}
+
+.bento-card-bottom {
+  margin-top: auto;
+}
+
+/* Pill Badges */
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.pill-badge-success {
+  background-color: var(--status-success-bg);
+  color: var(--status-success-ink);
+}
+
+.pill-badge-warning {
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+.pill-badge-danger {
+  background-color: #FEE2E2;
+  color: #DC2626;
+}
+
+.has-tooltip {
+  cursor: help;
+  transition: transform 0.15s ease;
+}
+
+.has-tooltip:hover {
+  transform: translateY(-1px);
+}
+
+.tooltip-icon {
+  font-size: 0.72rem;
+  opacity: 0.85;
+  margin-left: 2px;
+}
+
+.bento-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-bottom: 22px;
+}
+
+.bento-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 /* ==========================================================================
-   5. NOTIFIKASI ERROR & LOCK SYSTEM
+   6. IMPACT CARD // QUIXOTIC EMERALD PINE VISA-INSPIRED
    ========================================================================== */
-.error-box {
-    color: #dc2626;
-    background-color: #fef2f2;
-    border: 1px solid #fee2e2;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    margin-top: 20px;
-    display: none; /* Sembunyi, baru muncul jika password/user salah */
+.bento-emerald-card {
+  background: linear-gradient(135deg, var(--emerald-gradient-start) 0%, var(--emerald-gradient-end) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--radius-bento);
+  color: #FFFFFF;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(14, 99, 60, 0.26);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-/* MENGUNCI HALAMAN BELAKANG (Mengharuskan User Login Dulu) */
-/* MENGUNCI HALAMAN BELAKANG (Sudah diatur oleh atribut hidden di HTML) */
-#main-content {
-  width: 100%;
-  min-height: 100vh;
+.emerald-card-glow {
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(34, 164, 103, 0.45) 0%, transparent 70%);
+  pointer-events: none;
 }
-  /* ========================================== */
-  /* 2. BANNER PERINGATAN ATAS (TOP ALERT BAR)  */
-  /* ========================================== */
-  .top-alert-bar {
-    background-color: #fff3e0;
-    border-bottom: 2px solid var(--status-yellow);
-    padding: 10px 20px;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-  }
-  
-  .alert-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    max-width: 1400px;
-    margin: 0 auto;
-    font-size: 0.9rem;
-  }
-  
-  .alert-text {
-    color: #e65100;
-  }
-  
-  .btn-close-alert {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    color: #e65100;
-  }
-  
-  /* Tombol Hamburger (Layar HP) */
-  .menu-toggle {
-    display: none;
-    padding: 10px 15px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-  }
-  
-  /* ========================================== */
-  /* 3. TATA LETAK UTAMA & SIDEBAR              */
-  /* ========================================== */
-  .sidebar {
-    width: 250px;
-    background-color: var(--surface-color);
-    border-right: 1px solid var(--border-color);
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    z-index: 100;
-    overflow-y: auto;
-  }
-  
-  .brand h2 {
-    color: var(--primary-color);
-    font-size: 1.5rem;
-  }
-  
-  .user-profile {
-    background-color: var(--bg-color);
-    padding: 12px;
-    border-radius: var(--radius-sm);
-    font-size: 0.85rem;
-  }
-  
-  .badge {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-  }
-  
-  .nav-menu ul {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  
-  .nav-menu a {
-    text-decoration: none;
-    color: var(--text-secondary);
-    padding: 10px 12px;
-    border-radius: var(--radius-sm);
-    display: block;
-    font-weight: 500;
-    transition: all 0.2s ease;
-  }
-  
-  .nav-menu a:hover,
-  .nav-menu a.active {
-    background-color: #e8f5e9;
-    color: var(--primary-color);
-  }
-  
-  .main-content {
-    margin-left: 250px;
-    padding: 30px;
-    flex-grow: 1;
-  }
-  
-  /* ========================================== */
-  /* 4. KOMPONEN KARTU, HEADER & TOMBOL         */
-  /* ========================================== */
-  .section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-  }
-  
-  .section-header h1 {
-    font-size: 1.6rem;
-  }
-  
-  .card {
-    background-color: var(--surface-color);
-    border-radius: var(--radius-md);
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
-    margin-bottom: 20px;
-  }
-  
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px;
-    margin-bottom: 20px;
-  }
-  
-  .metric-number {
-    font-size: 1.8rem;
-    font-weight: bold;
-    margin-top: 8px;
-  }
-  
-  /* Variasi Warna Kartu Peringatan */
-  .card-warning { border-left: 5px solid var(--status-yellow); }
-  .card-critical { border-left: 5px solid var(--status-black); }
-  
-  .btn {
-    padding: 10px 18px;
-    border: none;
-    border-radius: var(--radius-sm);
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s ease;
-  }
-  
-  .btn:hover { opacity: 0.9; }
-  .btn-primary { background-color: var(--primary-color); color: white; }
-  .btn-secondary { background-color: var(--secondary-color); color: white; }
-  .btn-success { background-color: #2e7d32; color: white; }
-  .btn-danger { background-color: var(--status-red); color: white; }
-  
-  .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
-  .btn-block { width: 100%; margin-top: 10px; }
-  
-  /* ========================================== */
-  /* 5. TABEL, FILTER & BADGE STATUS           */
-  /* ========================================== */
-  .filter-bar {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-  }
-  
-  .filter-bar input,
-  .filter-bar select,
-  form input,
-  form select {
-    padding: 10px 14px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    outline: none;
-    font-family: inherit;
-  }
-  
-  .table-container {
-    overflow-x: auto;
-    background-color: var(--surface-color);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-  }
-  
-  th, td {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.9rem;
-  }
-  
-  th {
-    background-color: #fafafa;
-    font-weight: 600;
-  }
-  
-  /* Badge Status Kedaluwarsa */
-  .status-badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 600;
-  }
-  
-  .status-black { background-color: var(--status-black); }
-  .status-red { background-color: var(--status-red); }
-  .status-yellow { background-color: var(--status-yellow); }
-  .status-green { background-color: var(--status-green); }
-  
-  /* ========================================== */
-  /* 6. MODUL SPESIFIK (KASIR, IMPACT, MODAL)   */
-  /* ========================================== */
-  /* Impact Dashboard */
-  .impact-card {
-    background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
-    border: 1px solid #c8e6c9;
-  }
-  
-  .impact-metrics {
-    display: flex;
-    gap: 40px;
-    margin-top: 12px;
-  }
-  
-  /* Grid Tampilan Kasir */
-  .kasir-grid {
-    display: grid;
-    grid-template-columns: 1fr 1.5fr;
-    gap: 20px;
-  }
-  
-  .cart-summary {
-    margin-top: 20px;
-    border-top: 2px dashed var(--border-color);
-    padding-top: 16px;
-  }
-  
-  /* POP-UP MODAL */
-  .modal {
-    display: none; /* Dikelola via JS */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-  
-  .modal-content {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: #ffffff;
-    padding: 24px 30px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 750px;
-    z-index: 1001;
-  }
-  
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 16px;
-  }
-  
-  .close-modal {
-    background: none;
-    border: none;
-    font-size: 1.4rem;
-    cursor: pointer;
-  }
-  
-  .modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 10px;
-  }
-  
-  form label {
-    display: block;
-    font-size: 0.85rem;
-    font-weight: 600;
-    margin-top: 12px;
-    margin-bottom: 4px;
-  }
-  
-  form input, form select {
-    width: 100%;
-  }
-  
-  /* ========================================== */
-  /* 7. RESPONSIFITAS (DESKTOP & HP)            */
-  /* ========================================== */
-  @media (max-width: 768px) {
-    .menu-toggle { display: block; }
-  
-    .sidebar {
-      transform: translateX(-100%);
-      transition: transform 0.3s ease;
-    }
-  
-    .sidebar.active {
-      transform: translateX(0);
-    }
-  
-    .main-content {
-      margin-left: 0;
-      padding: 16px;
-    }
-  
-    .kasir-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-  /* ========================================== */
-/* 8. GAYA HALAMAN CETAK LAPORAN (PDF)        */
+
+/* 1. Header: Judul Kecil + Badge Simulasi */
+.emerald-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.emerald-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.emerald-sub-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 2px;
+}
+
+.emerald-main-brand {
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-style: italic;
+  color: #FFFFFF !important;
+  margin: 0;
+}
+
+.emerald-badge-simulasi {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* 2. Angka Utama Besar (2-3x dari label, Putih Bersih Tebal) */
+.impact-metrics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+  margin: 6px 0;
+  align-items: baseline;
+}
+
+.impact-metric-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.emerald-metric-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.emerald-big-number {
+  font-size: clamp(1.8rem, 2.2vw, 2.45rem);
+  font-weight: 800;
+  color: #FFFFFF !important;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap; /* Mencegah Rp dan angka terpisah baris */
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.emerald-big-number .currency-prefix {
+  font-size: 0.72em;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9) !important;
+  display: inline-block;
+  line-height: 1;
+}
+
+.emerald-big-number .num-val {
+  color: #FFFFFF !important;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.emerald-big-number .num-unit {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9) !important;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+/* 3. Periode Waktu */
+.emerald-period-bar {
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+  width: fit-content;
+  position: relative;
+  z-index: 1;
+}
+
+/* 4. Footer: Catatan Asumsi + Keterangan FEFO */
+.emerald-card-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  padding-top: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.emerald-asumsi-text {
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.emerald-fefo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  color: #FFFFFF;
+  width: fit-content;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.emerald-fefo-badge strong {
+  font-weight: 800;
+  color: #FFFFFF;
+}
+
+.fefo-icon {
+  font-size: 0.9rem;
+}
+
+/* List Kedaluwarsa */
+.expire-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.expire-list li {
+  background-color: var(--bg-nested-subtle);
+  border: 1px solid var(--border-hairline);
+  padding: 12px 16px;
+  border-radius: var(--radius-card-sm);
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Chart Card & Pills */
+.chart-legend-pills {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: var(--bg-nested-subtle);
+  border: 1px solid var(--border-hairline);
+}
+
+.dot-pembelian {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--sage-bar-muted);
+}
+
+.dot-penjualan {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--emerald-primary);
+}
+
 /* ========================================== */
-.print-body {
-  font-family: var(--font-main);
-  padding: 30px;
-  color: var(--text-primary);
-  background-color: #ffffff;
+/* 7. TABEL & BADGE STATUS KEDALUWARSA        */
+/* ========================================== */
+.table-container {
+  overflow-x: auto;
+  background-color: var(--bg-card-white);
+  border: 1px solid var(--border-hairline);
+  border-radius: 20px;
+  box-shadow: var(--shadow-subtle);
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+th {
+  background-color: var(--bg-nested-subtle);
+  color: var(--ink-secondary);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-hairline);
+  font-size: 0.88rem;
+  color: var(--ink-charcoal);
+  vertical-align: middle;
+}
+
+tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+tbody tr:hover {
+  background-color: #F8FAF9;
+}
+
+/* Badge Status Sesuai Aturan Resmi API:
+   - hijau : Hijau  (Skor 0-30   — stok diperkirakan habis sebelum kedaluwarsa)
+   - kuning: Oranye (Skor 31-69  — perlu perhatian)
+   - merah : Merah  (Skor 70-100 — risiko tinggi, stok tidak akan habis)
+*/
+.status-badge {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: capitalize;
+}
+
+.status-badge.hijau, .status-green {
+  background-color: #EBF8F1;
+  color: #158050;
+  border: 1px solid rgba(21, 128, 80, 0.2);
+}
+
+.status-badge.kuning, .status-badge.oranye, .status-yellow {
+  background-color: #FFF7ED;
+  color: #EA580C;
+  border: 1px solid rgba(234, 88, 12, 0.28);
+}
+
+.status-badge.merah, .status-red {
+  background-color: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid rgba(220, 38, 38, 0.24);
+}
+
+/* Styling Khusus Tabel Threshold Produk (Merapikan Jarak Kolom & Input) */
+.table-threshold {
+  width: 100%;
+}
+
+.table-threshold th,
+.table-threshold td {
+  padding: 14px 16px;
+}
+
+.table-threshold th:nth-child(3),
+.table-threshold td:nth-child(3),
+.table-threshold th:nth-child(4),
+.table-threshold td:nth-child(4),
+.table-threshold th:nth-child(5),
+.table-threshold td:nth-child(5),
+.table-threshold th:nth-child(6),
+.table-threshold td:nth-child(6) {
+  white-space: nowrap;
+}
+
+.table-threshold .input-threshold-produk {
+  width: 100px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-charcoal);
+  text-align: center;
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  background-color: #F8FAF9;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.table-threshold .input-threshold-produk:focus {
+  border-color: var(--emerald-primary);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(19, 122, 75, 0.14);
+}
+
+.table-threshold .input-satuan-produk {
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  background-color: #F8FAF9;
+  font-family: var(--font-sans);
+  color: var(--ink-charcoal);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.table-threshold .input-satuan-produk:focus {
+  border-color: var(--emerald-primary);
+  background-color: #FFFFFF;
+}
+
+/* ========================================== */
+/* 8. TOMBOL & KONTROL FORMULIR               */
+/* ========================================== */
+.btn {
+  padding: 11px 22px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--emerald-gradient-start) 0%, var(--emerald-gradient-end) 100%);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-emerald);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(19, 122, 75, 0.35);
+  opacity: 0.96;
+}
+
+.btn-secondary {
+  background-color: var(--bg-nested-subtle);
+  color: var(--ink-charcoal);
+  border: 1px solid var(--border-hairline);
+}
+
+.btn-secondary:hover {
+  background-color: #E8ECEA;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #178A56, #0E633C);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-emerald);
+}
+
+.btn-danger, .btn-delete {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+}
+
+.btn-danger:hover, .btn-delete:hover {
+  background-color: #DC2626;
+  color: #FFFFFF;
+}
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+/* Filter Bar & Controls */
+.filter-bar, .table-controls {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filter-kondisi-pill {
+  border-radius: 999px !important;
+  background-color: #FFFFFF !important;
+  color: var(--ink-secondary) !important;
+  border: 1px solid var(--border-hairline) !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  padding: 6px 14px !important;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filter-kondisi-pill:hover {
+  background-color: #F4F6F5 !important;
+  border-color: #CBD5E1 !important;
+}
+
+.filter-kondisi-pill.active {
+  background-color: var(--emerald-primary) !important;
+  color: #FFFFFF !important;
+  border-color: var(--emerald-primary) !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(19, 122, 75, 0.28) !important;
+}
+
+.filter-bar input,
+.filter-bar select,
+.table-controls input,
+.table-controls select {
+  padding: 11px 16px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-input);
+  background-color: #F8FAF9;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--ink-charcoal);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+form input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="file"]),
+form select,
+form textarea,
+.modal-content input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="file"]),
+.modal-content select,
+.modal-content textarea,
+.settings-form-row input,
+.settings-form-row select,
+.settings-form-row textarea {
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  padding: 11px 16px;
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-input);
+  background-color: #F8FAF9;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  color: var(--ink-charcoal);
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.filter-bar input:focus,
+.filter-bar select:focus,
+.table-controls input:focus,
+.table-controls select:focus,
+form input:focus,
+form select:focus,
+form textarea:focus {
+  border-color: var(--emerald-primary);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(19, 122, 75, 0.14);
+}
+
+form label {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 700;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  color: var(--ink-secondary);
+}
+
+/* Kasir System */
+.kasir-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: 22px;
+}
+
+.fefo-info-text {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: var(--emerald-primary);
+  background-color: var(--status-success-bg);
+  padding: 12px 16px;
+  border-radius: var(--radius-card-sm);
+  border: 1px solid rgba(21, 128, 80, 0.15);
+}
+
+.cart-summary {
+  margin-top: 20px;
+  border-top: 1px dashed var(--border-hairline);
+  padding-top: 18px;
+}
+
+.cart-summary h3 {
+  font-size: 1.25rem;
+  color: var(--ink-charcoal);
+}
+
+.cart-summary h3 span {
+  color: var(--emerald-primary);
+  font-weight: 800;
+}
+
+.payment-inputs {
+  margin: 14px 0;
+}
+
+/* Smart Input Result Box */
+.result-box {
+  background-color: var(--bg-nested-subtle);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-card-sm);
+  padding: 16px;
+  margin-top: 14px;
+}
+
+/* ========================================== */
+/* 9. MODAL POP-UP (SOFT-BENTO BLUR OVERLAY)  */
+/* ========================================== */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(17, 24, 20, 0.45);
+  backdrop-filter: blur(8px);
+  justify-content: center;
+  align-items: center;
+  z-index: 1100;
+}
+
+.modal-content {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: var(--bg-card-white);
+  padding: 28px 30px;
+  border-radius: 24px;
+  border: 1px solid var(--border-hairline);
+  box-shadow: var(--shadow-float);
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 1101;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-hairline);
+  padding-bottom: 14px;
+}
+
+.modal-header h2 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.close-modal {
+  background: var(--bg-nested-subtle);
+  border: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-secondary);
+  transition: all 0.2s ease;
+}
+
+.close-modal:hover {
+  background-color: #E8ECEA;
+  color: var(--ink-charcoal);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+/* ========================================== */
+/* 10. HALAMAN PENGATURAN (KONFIGURASI SAAS)  */
+/* ========================================== */
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+  background-color: var(--bg-nested-subtle);
+  padding: 6px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-hairline);
+}
+
+.settings-tab-btn {
+  padding: 10px 18px;
+  background-color: transparent;
+  color: var(--ink-secondary);
+  border: none;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+  font-size: 0.86rem;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-tab-btn:hover {
+  color: var(--emerald-primary);
+}
+
+.settings-tab-btn.active {
+  background-color: #FFFFFF;
+  color: var(--emerald-primary);
+  box-shadow: var(--shadow-subtle);
+}
+
+.settings-panel {
+  display: none;
+}
+
+.settings-panel.active {
   display: block;
 }
 
+.profile-settings-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.profile-avatar-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--bg-nested-subtle);
+  padding: 24px;
+  border-radius: 24px;
+  border: 1px solid var(--border-hairline);
+}
+
+.profile-avatar-large {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--emerald-primary);
+  box-shadow: var(--shadow-emerald);
+}
+
+.settings-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.settings-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+.settings-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-nested-subtle);
+  border: 1px solid var(--border-hairline);
+  color: var(--ink-charcoal);
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.settings-tag-chip button {
+  background: none;
+  border: none;
+  color: #DC2626;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.settings-tag-chip button:hover {
+  color: #991B1B;
+}
+
+/* ========================================== */
+/* 11. RESPONSIFITAS (HP & TABLET)            */
+/* ========================================== */
+@media (max-width: 900px) {
+  .menu-toggle {
+    display: block;
+  }
+
+  .sidebar {
+    transform: translateX(-120%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    top: 70px;
+    height: calc(100vh - 90px);
+  }
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+    max-width: 100vw;
+    padding: 70px 18px 40px;
+  }
+
+  .bento-two-col,
+  .kasir-grid,
+  .profile-settings-grid,
+  .settings-form-row,
+  .settings-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .impact-metrics,
+  .impact-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .emerald-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .emerald-asumsi-text,
+  .emerald-caption {
+    max-width: 100%;
+  }
+
+  .emerald-fefo-badge {
+    width: 100%;
+  }
+
+  .settings-tabs {
+    border-radius: 18px;
+  }
+}
+
+/* ========================================== */
+/* 12. GAYA HALAMAN CETAK LAPORAN (PDF)       */
+/* ========================================== */
+.print-body {
+  font-family: var(--font-sans);
+  padding: 30px;
+  color: var(--ink-charcoal);
+  background-color: #FFFFFF;
+}
+
 .print-title {
-  color: var(--primary-color);
+  color: var(--emerald-primary);
   margin-bottom: 4px;
 }
 
 .print-subtitle {
-  color: var(--text-secondary);
-  margin-top: 0;
+  color: var(--ink-secondary);
   font-size: 0.9rem;
 }
 
@@ -540,61 +1621,87 @@
 }
 
 .print-table th {
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background-color: var(--bg-nested-subtle);
+  border: 1px solid var(--border-hairline);
   padding: 10px;
   text-align: left;
 }
 
 .print-table td {
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-hairline);
   padding: 8px;
 }
-#form-pemasok input,
-#form-pemasok textarea {
+
+/* ========================================== */
+/* 13. SCANNER BARCODE & QR CODE KAMERA       */
+/* ========================================== */
+#html5-qrcode-reader {
+  width: 100% !important;
+  min-height: 280px !important;
+  max-height: 380px !important;
+  position: relative !important;
+  background: #090d16 !important;
+  border: 2px solid var(--border-hairline) !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+#html5-qrcode-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 16px !important;
+}
+
+#html5-qrcode-reader__scan_region {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+#html5-qrcode-reader__dashboard {
+  padding: 8px !important;
+  background: transparent !important;
+}
+
+#html5-qrcode-reader img {
+  max-width: 100% !important;
+}
+
+.scanner-viewport-wrap {
+  position: relative;
   width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 12px;
-}
-/* Styling bar pencarian & filter kategori pemasok */
-.table-controls {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
+  border-radius: 18px;
+  overflow: hidden;
 }
 
-.table-controls input,
-.table-controls select {
-    padding: 8px 14px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    font-size: 14px;
-    background-color: #ffffff;
-    outline: none;
+.scanner-laser-line {
+  position: absolute;
+  top: 15%;
+  left: 5%;
+  right: 5%;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent, #22c55e, #10b981, transparent);
+  box-shadow: 0 0 10px #22c55e, 0 0 18px #10b981;
+  animation: scanLaserAnim 2s infinite ease-in-out alternate;
+  z-index: 10;
+  pointer-events: none;
 }
 
-.table-controls input {
-    min-width: 240px;
+@keyframes scanLaserAnim {
+  0% { top: 12%; }
+  100% { top: 88%; }
 }
 
-.table-controls input:focus,
-.table-controls select:focus {
-    border-color: #2e7d32; /* Hijau selaras dengan tombol FreshLog */
-}
-/* Status badge dari API (hijau/kuning/merah) */
-.status-badge.hijau {
-  background-color: #388e3c;  /* sama dengan status-green */
-  color: white;
-}
-
-.status-badge.kuning {
-  background-color: #f57c00;  /* sama dengan status-yellow */
-  color: white;
-}
-
-.status-badge.merah {
-  background-color: #d32f2f;  /* sama dengan status-red */
-  color: white;
+.scanner-guide-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 700;
 }

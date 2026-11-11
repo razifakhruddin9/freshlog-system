@@ -25,6 +25,7 @@ from rekomendasi import tentukan_saran
 from restock import hitung_restock
 from riwayat import hitung_riwayat
 from beckend.bot import kirim_pesan_telegram
+from beckend.security import check_brute_force, track_failed_attempt, reset_failed_attempts
 
 # ── Inisialisasi aplikasi FastAPI ──────────────────────────────────────────
 app = FastAPI(
@@ -325,6 +326,59 @@ Catatan Penting:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Terjadi kesalahan: {str(e)}")
+
+
+# ── Endpoint Autentikasi & Keamanan (Brute-Force Protection) ───────────────
+class LoginInput(BaseModel):
+    username: str
+    password: str
+    role: str = ""
+
+DATABASE_PENGGUNA = {
+    "admin": {"password": "123", "role": "admin", "nama": "Admin Toko"},
+    "admin toko": {"password": "123", "role": "admin", "nama": "Admin Toko"},
+    "staf1": {"password": "123", "role": "staff", "nama": "Budi (Staf 1)"},
+    "staf2": {"password": "123", "role": "staff", "nama": "Siti (Staf 2)"},
+}
+
+@app.post("/login")
+def login_endpoint(data: LoginInput):
+    user_key = data.username.strip().lower()
+    if not user_key:
+        raise HTTPException(status_code=400, detail="Username tidak boleh kosong.")
+
+    # 1. Cek proteksi brute-force dari beckend/security.py (blokir 15 menit jika >= 5 gagal)
+    check_brute_force(user_key)
+
+    # 2. Verifikasi kecocokan username dan password
+    user = DATABASE_PENGGUNA.get(user_key)
+    if not user or user["password"] != data.password:
+        # Catat percobaan gagal
+        track_failed_attempt(user_key)
+        raise HTTPException(
+            status_code=401,
+            detail="Username atau kata sandi salah. Silakan periksa kembali."
+        )
+
+    # 3. Verifikasi kesesuaian hak akses role jika dipilih
+    if data.role and data.role != user["role"]:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Hak akses '{data.role}' tidak sesuai untuk akun '{data.username}'."
+        )
+
+    # 4. Berhasil login: reset tracker percobaan gagal
+    reset_failed_attempts(user_key)
+
+    return {
+        "status": "success",
+        "message": f"Login berhasil! Selamat datang, {user['nama']}.",
+        "user": {
+            "username": user_key,
+            "nama": user["nama"],
+            "role": user["role"]
+        }
+    }
 
 
 if __name__ == "__main__":

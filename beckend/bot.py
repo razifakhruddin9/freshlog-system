@@ -1,8 +1,8 @@
 import os
 import requests
 
-# Ambil token dari environment variable atau .env
-BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+# Pastikan token utuh tanpa ada karakter/spasi yang tertinggal
+BOT_TOKEN = "9141282545:AAHALhC4prYNk3HxdFslp5BUz3KHGxBfrLY"
 
 def kirim_pesan_telegram(chat_id: str, pesan: str):
     if not BOT_TOKEN:
