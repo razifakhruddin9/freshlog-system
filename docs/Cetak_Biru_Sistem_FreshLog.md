@@ -23,14 +23,12 @@ flowchart TD
     
     %% Alur Admin
     AdminPortal --> MasterProduk["Kelola Produk Master<br/>(Nama, Kategori, Harga Beli/Jual)"]
+    AdminPortal --> BeliMasuk["Menu Pembelian Barang Masuk<br/>(Faktur PO Supplier & Riwayat)"]
     AdminPortal --> RekapLaporan["Pantau Laporan Rekapitulasi &<br/>Audit Dampak Pangan"]
-    AdminPortal --> SettingBot["Konfigurasi Integrasi Bot Telegram"]
+    AdminPortal --> SettingBot["Konfigurasi Bot Telegram &<br/>Manajemen Akun Pengguna"]
     
     %% Alur Staf
     StaffPortal --> PilihanFitur{"Pilih Operasional"}
-    
-    PilihanFitur -- "Barang Masuk" --> InputBatch["Tambah Batch Inventaris<br/>(Manual atau Scan OCR Nota)"]
-    InputBatch --> SimpanBatch["Simpan Batch Baru<br/>(Set Tgl Kedaluwarsa & Qty)"]
     
     PilihanFitur -- "Barang Keluar (Kasir)" --> TransaksiPOS["Transaksi Penjualan POS"]
     TransaksiPOS --> AutoFEFO["Sistem Memotong Stok Batch<br/>Kedaluwarsa Terdekat (Auto-FEFO)"]
@@ -42,13 +40,17 @@ flowchart TD
     PilihAksi --> DialogKonfirm["Modal Konfirmasi Dampak"]
     DialogKonfirm -- "Konfirmasi Ya" --> AtomicAksi["Transaksi Atomik Backend:<br/>1. Stok Batch = 0<br/>2. Status Batch Final<br/>3. Catat ke Tabel Dampak Pangan"]
     AtomicAksi --> HilangTombol["Tombol Aksi Hilang (Idempotent)<br/>& Notifikasi Toast Muncul"]
+
+    PilihanFitur -- "Batch Tambahan" --> InputBatch["Tambah Batch Stok Produk Eksisting<br/>(Tanggal Expired & Qty)"]
+    InputBatch --> SimpanBatch["Simpan Batch Baru FEFO"]
     
-    SimpanBatch --> Selesai(["Update Dashboard Real-Time"])
+    BeliMasuk --> Selesai(["Update Dashboard Real-Time"])
+    SimpanBatch --> Selesai
     SyncDampakJual --> Selesai
     HilangTombol --> Selesai
 ```
 
-> **Penjelasan Singkat**: Alur di atas memisahkan wewenang antara Admin (penetapan harga master & analitik finansial) dan Staf (operasional kasir & gudang). Seluruh alur barang keluar terintegrasi langsung dengan logika rotasi FEFO (*First Expired, First Out*) dan bermuara pada pencatatan otomatis metrik penyelamatan pangan.
+> **Penjelasan Singkat**: Alur di atas secara ketat memisahkan hak akses antara **Admin** (penetapan master produk, transaksi pembelian PO supplier, konfigurasi sistem, dan audit finansial) serta **Staf** (operasional kasir POS FEFO, penambahan batch stok produk yang sudah ada, dan aksi mitigasi penyelamatan pangan). Fitur Pembelian Barang Masuk dari pemasok diproteksi khusus untuk Admin dan disembunyikan dari antarmuka Staf.
 
 ---
 

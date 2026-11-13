@@ -66,16 +66,19 @@
   <text x="905" y="315" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">PORTAL ADMIN</text>
 
   <!-- Admin Tasks -->
-  <rect x="790" y="370" width="230" height="42" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
-  <text x="905" y="396" text-anchor="middle" fill="#E2E8F0" font-size="12">Master Produk (Harga Beli/Jual)</text>
+  <rect x="780" y="360" width="250" height="38" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="905" y="384" text-anchor="middle" fill="#E2E8F0" font-size="12">Master Produk &amp; Atur Harga</text>
   
-  <rect x="790" y="425" width="230" height="42" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
-  <text x="905" y="451" text-anchor="middle" fill="#E2E8F0" font-size="12">Rekapitulasi Laporan Finansial</text>
+  <rect x="780" y="405" width="250" height="38" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="905" y="429" text-anchor="middle" fill="#E2E8F0" font-size="12">Pembelian (PO &amp; Faktur Supplier)</text>
 
-  <rect x="790" y="480" width="230" height="42" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
-  <text x="905" y="506" text-anchor="middle" fill="#E2E8F0" font-size="12">Konfigurasi Bot Telegram</text>
+  <rect x="780" y="450" width="250" height="38" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="905" y="474" text-anchor="middle" fill="#E2E8F0" font-size="12">Rekapitulasi Laporan Finansial</text>
 
-  <line x1="905" y1="335" x2="905" y2="368" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="780" y="495" width="250" height="38" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="905" y="519" text-anchor="middle" fill="#E2E8F0" font-size="12">Konfigurasi Bot Telegram &amp; Akun</text>
+
+  <line x1="905" y1="335" x2="905" y2="358" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#arrow)"/>
 
   <!-- Staff Branch (Down) -->
   <line x1="550" y1="355" x2="550" y2="400" stroke="#10B981" stroke-width="2" marker-end="url(#arrow)"/>
@@ -85,13 +88,13 @@
   <text x="550" y="430" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">PORTAL OPERASIONAL STAF</text>
 
   <!-- 3 Operasional Staf Pillars -->
-  <!-- Pillar 1: Barang Masuk -->
+  <!-- Pillar 1: Batch Stok -->
   <rect x="60" y="495" width="280" height="150" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
   <rect x="60" y="495" width="280" height="32" rx="12" fill="#334155"/>
-  <text x="200" y="516" text-anchor="middle" fill="#38BDF8" font-size="12" font-weight="700">1. PENGADAAN (BARANG MASUK)</text>
-  <text x="200" y="550" text-anchor="middle" fill="#E2E8F0" font-size="12">• Tambah Batch Manual / Scan Faktur</text>
-  <text x="200" y="575" text-anchor="middle" fill="#E2E8F0" font-size="12">• AI Vision OCR Nota Ekstraksi</text>
-  <text x="200" y="600" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">✓ Stok Aktif Bertambah (FEFO)</text>
+  <text x="200" y="516" text-anchor="middle" fill="#38BDF8" font-size="12" font-weight="700">1. INPUT BATCH STOK</text>
+  <text x="200" y="550" text-anchor="middle" fill="#E2E8F0" font-size="12">• Tambah Batch Produk Eksisting</text>
+  <text x="200" y="575" text-anchor="middle" fill="#E2E8F0" font-size="12">• Input Qty &amp; Tanggal Expired</text>
+  <text x="200" y="600" text-anchor="middle" fill="#10B981" font-size="11" font-weight="600">🔒 Pembelian PO: Khusus Admin</text>
 
   <!-- Pillar 2: Kasir POS -->
   <rect x="410" y="495" width="280" height="150" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
