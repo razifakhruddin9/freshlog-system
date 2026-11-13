@@ -59,6 +59,7 @@ skills-lock.json
 # Demo & Agents
 demo/
 .agents/
+.archify/
 
 # IDE & OS
 .vscode/
