@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FreshLog - Sistem Inventaris & FEFO</title>
+  <link rel="icon" type="image/png" href="logo-icon.png">
+  <!-- Google Fonts: Plus Jakarta Sans (Quixotic Soft-Bento Design) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="Freshlog.css">
+</head>
+<body>
+  <!-- login (Quixotic Soft-Bento Console) -->
+  <div class="login-wrapper" id="login-screen">
+    <div class="login-card-bento">
+      <div class="login-brand-logo-wrap" style="text-align: center; margin-bottom: 16px;">
+        <img src="logo.png" alt="FreshLog Logo" style="height: 56px; max-width: 250px; object-fit: contain;" />
+      </div>
+      <p class="login-subtitle">Sistem Manajemen Inventaris &amp; FEFO Retail Berbasis AI</p>
+      
+      <form id="loginForm">
+          <!-- Input Username -->
+          <div class="form-group">
+              <label for="username">Username Akun</label>
+              <input type="text" id="username" placeholder="Masukkan username Anda" required>
+          </div>
+
+          <!-- Input Password -->
+          <div class="form-group">
+              <label for="password">Kata Sandi</label>
+              <input type="password" id="password" placeholder="Masukkan kata sandi" required>
+          </div>
+
+          <!-- Pilihan Akses Role -->
+          <div class="form-group">
+              <label for="role">Hak Akses</label>
+              <select id="role" required>
+                  <option value="" disabled selected>-- Pilih Hak Akses Anda --</option>
+                  <option value="admin">Admin Toko</option>
+                  <option value="staff">Staf Toko</option>
+              </select>
+          </div>
+
+          <button type="submit" id="btn-submit-login" class="btn-login">Masuk ke Sistem</button>
+          <div id="errorBox" class="error-box">Akses ditolak! Periksa kembali data login Anda.</div>
+      </form>
+    </div>
+  </div>
+
+<!-- HALAMAN DASHBOARD DATA UTAMA (Awalnya Terkunci/Tersembunyi) -->
+<div id="main-content" hidden>
+
+<!-- TOMBOL HAMBURGER UNTUK TAMPILAN HP -->
+<button class="menu-toggle" id="menu-toggle">☰ Menu</button>
+
+  <!-- SIDEBAR NAVIGASI (Quixotic Floating Pill Rail) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-emblem" style="background: #ffffff; padding: 2px; border: 1px solid var(--border-hairline); box-shadow: var(--shadow-subtle); overflow: hidden;">
+        <img src="logo-icon.png" alt="FreshLog" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+      </div>
+      <div class="brand-text-wrap">
+        <h2>FreshLog</h2>
+        <span class="brand-sub">Inventory &amp; FEFO</span>
+      </div>
+    </div>
+    <!-- Info Peran & Sesi Jam Kerja -->
+    <div class="user-profile">
+      <div class="user-profile-header">
+        <img id="sidebar-user-avatar" src="https://ui-avatars.com/api/?name=Admin+Toko&background=137A4B&color=fff" alt="Avatar" class="sidebar-avatar">
+        <div class="user-profile-info">
+          <p class="user-name-label">Pengguna: <strong id="user-name">-</strong></p>
+          <p class="user-role-label"><span class="badge" id="user-role">-</span></p>
+        </div>
+      </div>
+      <div class="user-profile-details">
+        <p class="shift-info"><small id="user-shift">Sesi Shift: -</small></p>
+        <p class="shift-info"><small id="user-contact">Kontak: -</small></p>
+      </div>
+    </div>
+
+    <nav class="nav-menu">
+      <ul>
+        <li><a data-target="dashboard" class="active" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span><span class="nav-label">Dashboard &amp; Dampak</span></a></li>
+        <li><a data-target="produk" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span><span class="nav-label">Stok &amp; Batch</span></a></li>
+        <li><a data-target="kasir" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="21" r="1.5"/><circle cx="19" cy="21" r="1.5"/><path d="M2.5 2.5h3l2.4 11.5a2 2 0 0 0 2 1.6h9.6a2 2 0 0 0 1.9-1.5l1.6-7.6H6.5"/><path d="m14 5 3-3m0 0 3 3m-3-3v7"/></svg></span><span class="nav-label">Penjualan (Barang Keluar)</span></a></li>
+        <li id="nav-item-pembelian"><a data-target="pembelian" id="nav-link-pembelian" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/><path d="M19 13v6"/><path d="m16 16 3 3 3-3"/></svg></span><span class="nav-label">Pembelian (Barang Masuk)</span></a></li>
+        <li><a data-target="analitik-ai" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/><circle cx="19" cy="9" r="1.5"/></svg></span><span class="nav-label">Analitik AI</span></a></li>
+        <li><a data-target="laporan" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span><span class="nav-label">Laporan Rekapitulasi</span></a></li>
+        <li><a data-target="notif-bot" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span class="nav-label">Notifikasi Bot</span></a></li>
+        <li><a data-target="pengaturan" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">Pengaturan</span></a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- KONTEN UTAMA -->
+  <main class="main-content">
+    <!-- TOP FLOATING GREETING & STATUS BAR -->
+    <header class="top-floating-bar">
+      <div class="top-bar-left">
+        <h1 class="hero-greeting"><span class="greeting-lead">Selamat Datang,</span> <span class="greeting-user" id="top-user-name">Admin Toko</span></h1>
+        <p class="greeting-sub">Sistem Manajemen Inventaris &amp; Pemantauan Kedaluwarsa Real-Time</p>
+      </div>
+      <div class="top-bar-right">
+        <div class="top-pill-item date-pill">
+          <svg class="modern-icon" style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="top-current-date">11 Nov 2026</span>
+        </div>
+        <div class="top-pill-item shift-pill">
+          <span class="pulse-dot"></span>
+          <span id="top-user-shift-badge">Sesi: 07.00 - 22.00 WIB</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- BANNER PERINGATAN KEDALUWARSA (TOP ALERT BAR) -->
+<div class="top-alert-bar" id="top-alert">
+  <div class="alert-content">
+    <span class="alert-icon">
+      <svg class="alert-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </span>
+    <span class="alert-text" id="top-alert-text">
+      <strong>Peringatan Kedaluwarsa: </strong> Memuat status risiko inventaris...
+    </span>
+    <button class="btn-close-alert" onclick="this.parentElement.parentElement.style.display='none'">✕</button>
+  </div>
+</div>
+
+    <!-- SECTION 1: DASHBOARD UTAMA & DAMPAK (Quixotic Soft-Bento) -->
+    <section id="dashboard" class="section">
+      <header class="section-header">
+        <div>
+          <h1>Dashboard Ringkasan</h1>
+          <p class="section-sub">Pemantauan metrik stok, kedaluwarsa, dan dampak penyelamatan pangan</p>
+        </div>
+      </header>
+
+      <div class="card-grid bento-stats-grid">
+        <!-- Stat Card 1 -->
+        <div class="card bento-stat-card">
+          <div class="bento-card-top">
+            <span class="bento-card-sub">Total Sisa Stok</span>
+            <div class="bento-icon-badge">↗</div>
+          </div>
+          <h3>Total Stok Unit</h3>
+          <p class="metric-number" id="dash-total-stok">0 Unit</p>
+          <div class="bento-card-bottom">
+            <span class="pill-badge pill-badge-success">● Diperbarui langsung</span>
+          </div>
+        </div>
+
+        <!-- Stat Card 2 -->
+        <div class="card bento-stat-card card-warning">
+          <div class="bento-card-top">
+            <span class="bento-card-sub">Stok Hampir Habis</span>
+            <div class="bento-icon-badge">⚠️</div>
+          </div>
+          <h3>Stok Menipis</h3>
+          <p class="metric-number" id="dash-stok-menipis">0 Produk</p>
+          <div class="bento-card-bottom">
+            <span class="pill-badge pill-badge-warning">● Perlu Restock</span>
+          </div>
+        </div>
+
+        <!-- Stat Card 3 -->
+        <div class="card bento-stat-card card-critical">
+          <div class="bento-card-top">
+            <span class="bento-card-sub">Kedaluwarsa dalam 3 Bulan</span>
+            <div class="bento-icon-badge">🚨</div>
+          </div>
+          <h3>Batch Segera Kedaluwarsa</h3>
+          <p class="metric-number" id="dash-batch-merah">0 Batch</p>
+          <div class="bento-card-bottom">
+            <span class="pill-badge pill-badge-danger">● Diskon / FEFO Cepat</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bento Row: Ringkasan Kedaluwarsa + Kartu Dampak Pangan Emerald -->
+      <div class="bento-two-col">
+        <!-- Ringkasan Produk Mendekati Kedaluwarsa -->
+        <div class="card warning-card bento-card">
+          <div class="bento-card-header">
+            <div>
+              <span class="bento-card-sub">Pemantauan Kedaluwarsa</span>
+              <h2>Daftar Produk Mendekati Kedaluwarsa</h2>
+            </div>
+            <div class="bento-icon-badge">⏱️</div>
+          </div>
+          <ul class="expire-list" id="dash-expire-list">
+            <li><em>Memuat data kedaluwarsa...</em></li>
+          </ul>
+        </div>
+
+        <!-- Dashboard Dampak Pangan (Desain Rapi Sesuai Gaya Gambar 2) -->
+        <div class="card impact-card bento-emerald-card">
+          <div class="emerald-card-glow"></div>
+          
+          <!-- 1. Header: Nama Dampak Pangan -->
+          <div class="emerald-card-header">
+            <div class="emerald-title-wrap">
+              <span class="emerald-sub-title">SISTEM ROTASI &amp; DAMPAK</span>
+              <h2 class="emerald-main-brand">Dampak Pangan</h2>
+            </div>
+            <div class="emerald-badge-simulasi">
+              <span id="dash-dampak-bulan-label">📊 Data Simulasi</span>
+            </div>
+          </div>
+
+          <!-- 2. Empat Angka Metrik Besar dalam 1 Kartu (Terselamatkan & Tidak Terselamatkan) -->
+          <div class="impact-metrics-grid" style="margin-bottom: 12px;">
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label">Pangan Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="num-val" id="dash-dampak-terselamatkan-kg">266</span> <span class="num-unit">kg</span>
+              </div>
+            </div>
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label">Nilai Rupiah Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="currency-prefix">Rp</span> <span class="num-val" id="dash-dampak-terselamatkan-rp">13.311.000</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="impact-metrics-grid" style="padding-top: 12px; border-top: 1px dashed rgba(255, 255, 255, 0.22); margin-top: 0; margin-bottom: 8px;">
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label" style="color: rgba(255, 255, 255, 0.85);">Pangan Tidak Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="num-val" id="dash-dampak-gagal-kg">15</span> <span class="num-unit">kg</span>
+              </div>
+            </div>
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label" style="color: rgba(255, 255, 255, 0.85);">Nilai Rupiah Tidak Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="currency-prefix">Rp</span> <span class="num-val" id="dash-dampak-gagal-rp">225.000</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Periode Waktu -->
+          <div class="emerald-period-bar">
+            <span id="dash-dampak-periode">📅 Periode: Tahun Berjalan 2026</span>
+          </div>
+
+          <!-- 4. Footer: Catatan Asumsi + Keterangan FEFO -->
+          <div class="emerald-card-footer">
+            <p class="emerald-asumsi-text" id="dash-dampak-asumsi">
+              * Asumsi: 60% stok hampir kedaluwarsa terselamatkan (0,3 kg/unit, estimasi Rp 15.000/unit).
+            </p>
+            <div class="emerald-fefo-badge">
+              <span class="fefo-icon">⚡</span>
+              <span><strong>Sistem FEFO:</strong> yang kedaluwarsa duluan, keluar duluan</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grafik Mini: Pembelian vs Penjualan (7 Hari Terakhir) -->
+      <div class="card bento-card">
+        <div class="bento-card-header">
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="bento-card-sub">Pergerakan Stok Harian</span>
+              <span class="badge" style="background: rgba(19, 122, 75, 0.1); color: var(--emerald-primary); font-size: 0.74rem; font-weight: 700; border-radius: 999px; padding: 2px 8px;">7 Hari Terakhir</span>
+            </div>
+            <h2 style="margin: 2px 0 0; font-size: 1.25rem;">Grafik Mini: Pembelian vs Penjualan</h2>
+          </div>
+          <div class="chart-legend-pills">
+            <span class="chart-pill pill-pembelian"><span class="dot-pembelian"></span> Pembelian (Sage)</span>
+            <span class="chart-pill pill-penjualan"><span class="dot-penjualan"></span> Penjualan (Emerald)</span>
+          </div>
+        </div>
+
+        <!-- Ringkasan Cepat Metrik 7 Hari Terakhir -->
+        <div id="dashboard-mini-chart-summary" style="display: flex; gap: 10px; margin: 10px 0 14px; flex-wrap: wrap;">
+          <div style="background: var(--bg-nested-subtle); border: 1px solid var(--border-hairline); border-radius: 12px; padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--ink-secondary);">Total Pembelian:</span>
+            <strong id="kpi-mini-beli" style="color: #4A7A64;">0 Unit</strong>
+          </div>
+          <div style="background: var(--bg-nested-subtle); border: 1px solid var(--border-hairline); border-radius: 12px; padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--ink-secondary);">Total Penjualan:</span>
+            <strong id="kpi-mini-jual" style="color: var(--emerald-primary);">0 Unit</strong>
+          </div>
+          <div style="background: var(--bg-nested-subtle); border: 1px solid var(--border-hairline); border-radius: 12px; padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--ink-secondary);">Efisiensi Keluar:</span>
+            <strong id="kpi-mini-turnover" style="color: var(--emerald-primary);">0%</strong>
+          </div>
+        </div>
+
+        <div class="chart-container" style="position: relative; height: 230px; width: 100%;">
+          <canvas id="chartPembelianPenjualan"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: STOK & BATCH -->
+    <section id="produk" class="section">
+      <header class="section-header">
+        <div>
+          <h1>Stok &amp; Batch</h1>
+          <p class="section-sub">Manajemen inventaris stok produk, pemantauan nomor batch, dan rotasi kedaluwarsa FEFO</p>
+        </div>
+        <div class="button-group">
+          <!-- Tombol hanya untuk Admin -->
+          <button type="button" id="btn-tambah-produk-master" class="btn btn-primary" onclick="bukaModalTambahProdukMaster()">+ Produk Master</button>
+          <!-- Tombol hanya untuk Staff -->
+          <button type="button" id="btn-tambah-batch" class="btn btn-secondary" onclick="bukaModalTambahBatch()">+ Tambah Batch</button>
+        </div>
+      </header>
+
+      <!-- SUB-TABS: BATCH INVENTARIS vs MASTER PRODUK -->
+      <div class="settings-tabs" style="margin-bottom: 22px;">
+        <button type="button" class="settings-tab-btn active" id="tab-btn-stok-batch" onclick="gantiTabStokBatch('batch')">
+          📦 Stok &amp; Batch Inventaris
+        </button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-stok-master" onclick="gantiTabStokBatch('master')">
+          📋 Master Produk &amp; Harga
+        </button>
+      </div>
+
+      <!-- SUB-PANEL 1: STOK & BATCH INVENTARIS (FEFO) -->
+      <div id="panel-stok-batch" class="stok-panel active">
+        <!-- Filter Bar & Quick Filters (Stok Menipis / Mendekati Expired / Berisiko Tinggi) -->
+        <div style="margin-bottom: 16px;">
+          <!-- Filter Pills Cepat -->
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center;">
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--ink-secondary); margin-right: 4px;">Filter Cepat:</span>
+            <button type="button" class="btn btn-sm filter-kondisi-pill active" data-kondisi="all" onclick="filterTabelInventaris('all')">
+              Semua Stok &amp; Batch
+            </button>
+            <button type="button" class="btn btn-sm filter-kondisi-pill" data-kondisi="menipis" onclick="filterTabelInventaris('menipis')">
+              ⚠️ Stok Menipis
+            </button>
+            <button type="button" class="btn btn-sm filter-kondisi-pill" data-kondisi="mendekati_exp" onclick="filterTabelInventaris('mendekati_exp')">
+              ⏳ Mendekati Expired (&le; 7 Hari)
+            </button>
+            <button type="button" class="btn btn-sm filter-kondisi-pill" data-kondisi="berisiko_tinggi" onclick="filterTabelInventaris('berisiko_tinggi')">
+              🔴 Berisiko Tinggi (Merah)
+            </button>
+          </div>
+
+          <!-- Filter Bar Input, Kategori & Kondisi Stok -->
+          <div class="filter-bar">
+            <input type="text" id="filter-search-inventaris" placeholder="Cari nama produk atau SKU..." oninput="filterTabelInventaris()">
+            <select id="filter-kategori-inventaris" onchange="filterTabelInventaris()">
+              <option value="">Semua Kategori</option>
+              <option value="Makanan Fresh">🥬 Makanan Segar &amp; Sayuran</option>
+              <option value="Minuman &amp; Dairy">🥛 Minuman &amp; Olahan Susu</option>
+              <option value="Frozen Food">❄️ Makanan Beku (Frozen Food)</option>
+              <option value="Snack &amp; Kue">🍪 Camilan, Kue &amp; Biskuit</option>
+              <option value="Bahan Pokok">🌾 Bahan Pokok &amp; Sembako</option>
+              <option value="Makanan Kaleng">🥫 Makanan Instan &amp; Kaleng</option>
+              <option value="Bumbu Dapur">🌶️ Bumbu &amp; Rempah Dapur</option>
+              <option value="Perawatan Rumah">🧹 Pembersih &amp; Perawatan Rumah</option>
+              <option value="Perawatan Tubuh">🧼 Perawatan Tubuh &amp; Sabun</option>
+              <option value="Kosmetik">💄 Kosmetik &amp; Kecantikan</option>
+              <option value="Kesehatan">💊 Kesehatan, Suplemen &amp; Obat</option>
+              <option value="Kebutuhan Bayi">👶 Kebutuhan Bayi &amp; Anak</option>
+            </select>
+            <select id="filter-kondisi-stok" onchange="filterTabelInventaris(this.value)">
+              <option value="all">Semua Kondisi Stok &amp; Batch</option>
+              <option value="menipis">⚠️ Stok Menipis (&le; Threshold)</option>
+              <option value="mendekati_exp">⏳ Mendekati Expired (&le; 7 Hari)</option>
+              <option value="berisiko_tinggi">🔴 Berisiko Tinggi (Skor 70-100 / Merah)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabel Inventaris -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Kode Batch</th>
+                <th>Nama Produk</th>
+                <th>Stok (Utuh)</th>
+                <th>Tgl Kedaluwarsa</th>
+                <th>Status Risiko</th>
+                <th>Saran Tindakan (Google Gemini)</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-inventaris">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 2: MASTER PRODUK & HARGA (DAPAT DILIHAT OLEH KEDUANYA) -->
+      <div id="panel-stok-master" class="stok-panel" style="display: none;">
+        <div class="card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
+                <svg class="modern-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                Daftar Master Produk &amp; Harga
+              </h2>
+              <p style="color: var(--ink-secondary); font-size: 0.85rem; margin-top: 2px;">Daftar penetapan nama barang, kategori, harga beli, dan harga jual produk master (dapat dipantau oleh Admin &amp; Staf)</p>
+            </div>
+            <div id="subfitur-btn-tambah-master">
+              <button type="button" class="btn btn-primary btn-sm btn-admin-only" onclick="bukaModalTambahProdukMaster()">+ Produk Master Baru</button>
+            </div>
+          </div>
+
+          <div class="filter-bar" style="margin-bottom: 0;">
+            <input type="text" id="filter-search-master-produk" placeholder="Cari nama barang atau barcode SKU..." oninput="filterTabelMasterProduk()" style="flex: 1;">
+            <select id="filter-kategori-master-produk" onchange="filterTabelMasterProduk()" style="min-width: 200px;">
+              <option value="">Semua Kategori</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 17%;">Barcode / SKU</th>
+                <th style="width: 26%;">Nama Barang</th>
+                <th style="width: 18%;">Kategori</th>
+                <th style="width: 14%;">Harga Beli</th>
+                <th style="width: 14%;">Harga Jual</th>
+                <th style="width: 11%;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-master-produk">
+              <!-- Diisi otomatis oleh renderTabelMasterProduk() -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: PENJUALAN (BARANG KELUAR) -->
+    <section id="kasir" class="section">
+      <header class="section-header">
+        <div>
+          <h1>Penjualan (Barang Keluar)</h1>
+          <p class="section-sub">Catat transaksi penjualan ke pelanggan dengan pemotongan otomatis batch terdekat (FEFO)</p>
+        </div>
+      </header>
+
+      <!-- SUB-TABS PENJUALAN -->
+      <div class="settings-tabs" style="margin-bottom: 22px;">
+        <button type="button" class="settings-tab-btn active" id="tab-btn-jual-baru" onclick="gantiTabPenjualan('baru')">Form Penjualan Baru</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-jual-riwayat" onclick="gantiTabPenjualan('riwayat')">Daftar Penjualan (Riwayat)</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-jual-voice-ocr" onclick="gantiTabPenjualan('voice-ocr')">Input via Voice / OCR</button>
+      </div>
+
+      <!-- SUB-PANEL 1: FORM PENJUALAN BARU (FEFO OTOMATIS) -->
+      <div id="panel-jual-baru" class="penjualan-panel">
+        <div class="kasir-grid">
+          <!-- Card Kiri: Input & Pemilihan Produk -->
+          <div class="card">
+            <h2>Pilih Produk &amp; Jumlah</h2>
+            
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label for="pilih-produk-penjualan">Pilih Produk</label>
+              <select id="pilih-produk-penjualan" onchange="updateInfoBatchFEFO()">
+                <option value="">-- Pilih Produk untuk Dijual --</option>
+              </select>
+            </div>
+
+            <div class="settings-form-row" style="margin-bottom: 14px;">
+              <div style="flex: 1;">
+                <label for="input-qty-penjualan">Jumlah Qty (Pcs)</label>
+                <input type="number" id="input-qty-penjualan" min="1" value="1" oninput="updateInfoBatchFEFO()">
+              </div>
+              <div style="flex: 1;">
+                <label for="input-harga-penjualan">Harga Jual Satuan (Rp)</label>
+                <input type="number" id="input-harga-penjualan" readonly style="background-color: var(--bg-nested-subtle);">
+              </div>
+            </div>
+
+            <!-- Box Pratinjau Alokasi FEFO -->
+            <div id="box-fefo-preview" class="fefo-preview-box" style="margin-bottom: 16px; background: var(--bg-nested-subtle); border: 1px dashed var(--border-hairline); border-radius: 14px; padding: 12px 14px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--emerald-primary); font-size: 0.85rem; margin-bottom: 6px;">
+                <span>Rotasi Otomatis FEFO (First Expired, First Out)</span>
+              </div>
+              <p id="fefo-preview-text" style="font-size: 0.84rem; color: var(--ink-secondary); margin: 0;">Pilih produk dan tentukan jumlah untuk melihat batch mana yang otomatis terpotong lebih dulu.</p>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block" onclick="tambahItemKeKeranjangFEFO()">+ Tambah ke Keranjang</button>
+
+            <div style="margin-top: 18px; border-top: 1px solid var(--border-hairline); padding-top: 16px;">
+              <label for="barcode-scanner">Scan / Ketik Barcode atau QR Code Produk</label>
+              <div style="display: flex; gap: 8px; align-items: stretch;">
+                <input type="text" id="barcode-scanner" placeholder="Arahkan scanner atau ketik kode..." style="flex: 1;">
+                <button type="button" class="btn btn-secondary" onclick="bukaScannerKamera('penjualan')" style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+                  <svg class="modern-icon" style="width: 18px; height: 18px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/></svg>
+                  <span>Scan Kamera</span>
+                </button>
+              </div>
+              <p style="font-size: 0.8rem; color: var(--ink-secondary); margin-top: 4px;">Tekan Enter atau gunakan tombol <strong>Scan Kamera</strong> untuk langsung memasukkan produk ke keranjang.</p>
+            </div>
+          </div>
+
+          <!-- Card Kanan: Keranjang & Pembayaran -->
+          <div class="card">
+            <h2>Keranjang Belanja Penjualan</h2>
+            <div class="table-container" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;">
+              <table class="cart-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Produk</th>
+                    <th>Qty</th>
+                    <th>Harga</th>
+                    <th>Subtotal</th>
+                    <th>Alokasi FEFO</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="cart-items">
+                  <tr><td colspan="6" style="text-align: center; color: var(--ink-secondary); padding: 24px;">Keranjang masih kosong. Tambahkan item di sebelah kiri.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Rincian Pembayaran Kasir -->
+            <div class="cart-summary" style="background: var(--bg-nested-subtle); border-radius: 18px; padding: 16px 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-weight: 600; color: var(--ink-secondary);">Total Belanja:</span>
+                <span id="label-total-belanja" style="font-size: 1.3rem; font-weight: 800; color: var(--emerald-primary);">Rp 0</span>
+              </div>
+              
+              <div class="settings-form-row" style="margin-bottom: 12px;">
+                <div style="flex: 1;">
+                  <label for="input-uang-dibayar">Uang Diterima (Rp)</label>
+                  <input type="number" id="input-uang-dibayar" placeholder="0" oninput="hitungKembalianPenjualan()">
+                </div>
+                <div style="flex: 1;">
+                  <label>Kembalian (Rp)</label>
+                  <div id="label-kembalian" style="padding: 10px 14px; background: #FFFFFF; border: 1px solid var(--border-hairline); border-radius: var(--radius-pill); font-weight: 700; color: var(--ink-charcoal);">Rp 0</div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="input-nama-pelanggan">Nama Pelanggan / Catatan (Opsional)</label>
+                <input type="text" id="input-nama-pelanggan" placeholder="Contoh: Pelanggan Umum / Meja 01">
+              </div>
+
+              <button type="button" class="btn btn-success btn-block" onclick="selesaikanTransaksiPenjualan()" style="padding: 12px 18px; font-size: 0.95rem;">Selesaikan &amp; Potong Stok FEFO</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 2: DAFTAR PENJUALAN (RIWAYAT & DETAIL BATCH) -->
+      <div id="panel-jual-riwayat" class="penjualan-panel" style="display: none;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <h2>Riwayat Penjualan (Barang Keluar)</h2>
+              <p style="color: var(--text-secondary); font-size: 0.85rem;">Catatan seluruh transaksi keluar lengkap dengan pelacakan batch kedaluwarsa yang dipotong.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="eksporRiwayatPenjualanCSV()">Ekspor CSV</button>
+          </div>
+
+          <!-- Filter by tanggal / produk / search -->
+          <div class="filter-bar" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--ink-secondary);">Dari:</span>
+              <input type="date" id="filter-jual-tgl-mulai" onchange="renderRiwayatPenjualan()" style="padding: 7px 12px; font-size: 0.85rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--ink-secondary);">Sampai:</span>
+              <input type="date" id="filter-jual-tgl-akhir" onchange="renderRiwayatPenjualan()" style="padding: 7px 12px; font-size: 0.85rem;">
+            </div>
+            <select id="filter-jual-produk" onchange="renderRiwayatPenjualan()" style="min-width: 170px;">
+              <option value="">Semua Produk</option>
+            </select>
+            <input type="text" id="filter-jual-cari" placeholder="Cari No. Faktur / Pelanggan..." oninput="renderRiwayatPenjualan()" style="flex: 1; min-width: 180px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilterPenjualan()">Reset Filter</button>
+          </div>
+
+          <!-- Tabel Riwayat Penjualan -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>No. Faktur</th>
+                  <th>Tanggal &amp; Waktu</th>
+                  <th>Pelanggan</th>
+                  <th>Item &amp; Qty</th>
+                  <th>Total Transaksi</th>
+                  <th>Batch Terpakai</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tabel-riwayat-penjualan">
+                <!-- Diisi via renderRiwayatPenjualan() -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 3: INPUT VIA VOICE / OCR NOTA -->
+      <div id="panel-jual-voice-ocr" class="penjualan-panel" style="display: none;">
+        <div class="grid-2-col" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          <!-- Card Voice Input -->
+          <div class="card">
+            <h2>Input via Suara (Voice to Sale)</h2>
+            <p style="color: var(--ink-secondary); font-size: 0.88rem; margin-bottom: 14px;">
+              Ucapkan contoh: <em>"Jual 2 botol susu ultra"</em> atau <em>"Keluar 3 bungkus roti tawar"</em>.
+            </p>
+            <button type="button" class="btn btn-secondary" id="btn-rekam" onclick="mulaiRekam()" style="width: 100%; margin-bottom: 12px;">
+              Mulai Rekam Suara
+            </button>
+            <div class="result-box" id="hasil-suara" style="min-height: 80px; background: var(--bg-nested-subtle); padding: 12px; border-radius: 12px; font-size: 0.88rem;">
+              <p style="color: var(--ink-secondary); margin: 0;"><em>Transkrip suara akan muncul di sini...</em></p>
+            </div>
+          </div>
+
+          <!-- Card OCR Foto Nota -->
+          <div class="card">
+            <h2>Input via OCR Foto Nota</h2>
+            <p style="color: var(--ink-secondary); font-size: 0.88rem; margin-bottom: 14px;">
+              Unggah foto nota penjualan fisik untuk diekstrak otomatis dan dimasukkan ke transaksi.
+            </p>
+            <input type="file" id="input-foto" accept="image/*" onchange="pratinjauFoto(this)" style="margin-bottom: 10px; width: 100%;">
+            <div id="pratinjau-foto" style="margin-bottom: 10px;"></div>
+            <button type="button" class="btn btn-secondary" id="btn-ekstrak" onclick="ekstrakFoto()" style="width: 100%; margin-bottom: 12px;" disabled>
+              Ekstrak dengan AI
+            </button>
+            <div class="result-box" id="hasil-foto" style="min-height: 80px; background: var(--bg-nested-subtle); padding: 12px; border-radius: 12px; font-size: 0.88rem;">
+              <p style="color: var(--ink-secondary); margin: 0;"><em>Hasil ekstraksi teks struk akan muncul di sini...</em></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Konfirmasi Ekstraksi Cepat -->
+        <div class="card" style="margin-top: 20px;">
+          <h2>Konfirmasi Hasil Voice / OCR ke Penjualan</h2>
+          <form id="form-konfirmasi-ekstraksi" onsubmit="konfirmasiEkstraksiKePenjualan(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; align-items: flex-end;">
+            <div>
+              <label for="ekstrak-produk">Nama Produk</label>
+              <input type="text" id="ekstrak-produk" placeholder="Terisi otomatis..." required>
+            </div>
+            <div>
+              <label for="ekstrak-jumlah">Jumlah (Qty)</label>
+              <input type="number" id="ekstrak-jumlah" min="1" value="1" placeholder="1" required>
+            </div>
+            <div>
+              <label for="ekstrak-exp" style="display:none;">Exp Date</label>
+              <input type="date" id="ekstrak-exp" style="display:none;">
+              <button type="submit" class="btn btn-primary" style="width: 100%;">+ Masukkan ke Penjualan Baru</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3B: PEMBELIAN (BARANG MASUK) -->
+    <section id="pembelian" class="section">
+      <header class="section-header">
+        <div>
+          <h1>Pembelian (Barang Masuk)</h1>
+          <p class="section-sub">Catat transaksi pembelian dari pemasok &amp; registrasi stok batch baru secara otomatis</p>
+        </div>
+      </header>
+
+      <!-- SUB-TABS PEMBELIAN -->
+      <div class="settings-tabs" style="margin-bottom: 22px;">
+        <button type="button" class="settings-tab-btn active" id="tab-btn-beli-baru" onclick="gantiTabPembelian('baru')">Form Pembelian Baru</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-beli-riwayat" onclick="gantiTabPembelian('riwayat')">Daftar Pembelian (Riwayat)</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-beli-voice-ocr" onclick="gantiTabPembelian('voice-ocr')">Input via Voice / OCR</button>
+      </div>
+
+      <!-- SUB-PANEL 1: FORM PEMBELIAN BARU -->
+      <div id="panel-beli-baru" class="pembelian-panel">
+        <div class="kasir-grid">
+          <!-- Card Kiri: Form Input Item Pembelian -->
+          <div class="card">
+            <h2>Input Barang Masuk dari Pemasok</h2>
+
+            <!-- Baris 1: Nomor Pembelian & Tanggal Barang Sampai ke Toko -->
+            <div class="settings-form-row" style="margin-bottom: 14px;">
+              <div>
+                <label for="input-nomor-pembelian">Nomor Pembelian <span style="color: #dc2626;">*</span></label>
+                <div style="display: flex; gap: 6px;">
+                  <input type="text" id="input-nomor-pembelian" placeholder="Contoh: PO-20261112-001" style="flex: 1; font-weight: 700; color: var(--emerald-primary); letter-spacing: 0.5px;" required>
+                  <button type="button" class="btn btn-secondary btn-sm" onclick="regenerateNomorPembelianOtomatis()" title="Generate Nomor Baru" style="padding: 0 12px; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center;">↻</button>
+                </div>
+              </div>
+              <div>
+                <label for="input-tgl-sampai-toko">Tanggal Barang Sampai ke Toko <span style="color: #dc2626;">*</span></label>
+                <input type="date" id="input-tgl-sampai-toko" required>
+              </div>
+            </div>
+
+            <!-- Baris 2: Nama Supplier -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label for="pilih-pemasok-pembelian">Nama Supplier <span style="color: #dc2626;">*</span></label>
+              <input type="text" id="pilih-pemasok-pembelian" placeholder="Ketik nama supplier..." autocomplete="off" required>
+            </div>
+
+            <!-- Baris 3: Produk yang Diketik -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label for="input-produk-pembelian" style="margin-bottom: 0;">Produk yang Diketik <span style="color: #dc2626;">*</span></label>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="bukaScannerKamera('pembelian')" style="display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; font-size: 0.78rem;">
+                  <svg class="modern-icon" style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/></svg>
+                  <span>Scan Barcode / QR</span>
+                </button>
+              </div>
+              <input type="text" id="input-produk-pembelian" placeholder="Ketik nama produk..." autocomplete="off" oninput="isiOtomatisHargaBeliProduk()" required>
+            </div>
+
+            <!-- Baris 4: Jumlah Qty & Harga Beli Satuan -->
+            <div class="settings-form-row" style="margin-bottom: 14px;">
+              <div>
+                <label for="input-qty-pembelian">Jumlah Qty Masuk (Pcs) <span style="color: #dc2626;">*</span></label>
+                <input type="number" id="input-qty-pembelian" min="1" value="10" oninput="hitungPratinjauSubtotalBeli()">
+              </div>
+              <div>
+                <label for="input-harga-beli-pembelian">Harga Beli Satuan (Rp) <span style="color: #dc2626;">*</span></label>
+                <input type="number" id="input-harga-beli-pembelian" min="0" placeholder="Contoh: 15000" oninput="hitungPratinjauSubtotalBeli()">
+              </div>
+            </div>
+
+            <!-- Baris 5: Tanggal Expired & Kode Batch -->
+            <div class="settings-form-row" style="margin-bottom: 14px;">
+              <div>
+                <label for="input-exp-pembelian">Tanggal Expired Batch <span style="color: #dc2626;">*</span></label>
+                <input type="date" id="input-exp-pembelian" required>
+              </div>
+              <div>
+                <label for="input-kode-batch-pembelian">Kode Batch</label>
+                <input type="text" id="input-kode-batch-pembelian" placeholder="Otomatis: BTC-...">
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px; background: var(--bg-nested-subtle); border: 1px dashed var(--border-hairline); border-radius: 14px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: var(--ink-secondary); font-weight: 600;">Estimasi Subtotal Item:</span>
+              <strong id="preview-subtotal-beli" style="font-size: 1rem; color: var(--emerald-primary);">Rp 0</strong>
+            </div>
+
+            <button type="button" class="btn btn-primary btn-block" onclick="tambahItemKeDaftarPembelian()">+ Tambah ke Daftar Pembelian</button>
+          </div>
+
+          <!-- Card Kanan: Daftar Item Nota Pembelian & Simpan -->
+          <div class="card">
+            <h2>Daftar Item Nota Pembelian</h2>
+            <div class="table-container" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;">
+              <table class="cart-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th>Produk &amp; Batch</th>
+                    <th>Tgl Expired</th>
+                    <th>Qty</th>
+                    <th>Harga Beli</th>
+                    <th>Subtotal</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="cart-items-pembelian">
+                  <tr><td colspan="6" style="text-align: center; color: var(--ink-secondary); padding: 24px;">Daftar pembelian masih kosong. Tambahkan item di sebelah kiri.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Ringkasan & Konfirmasi Pembelian -->
+            <div class="cart-summary" style="background: var(--bg-nested-subtle); border-radius: 18px; padding: 16px 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <span style="font-weight: 600; color: var(--ink-secondary);">Total Nilai Pembelian:</span>
+                <span id="label-total-pembelian" style="font-size: 1.3rem; font-weight: 800; color: var(--emerald-primary);">Rp 0</span>
+              </div>
+
+              <div class="settings-form-row" style="margin-bottom: 14px;">
+                <div style="flex: 1;">
+                  <label for="input-no-referensi-beli">No. Surat Jalan / Nota Pemasok</label>
+                  <input type="text" id="input-no-referensi-beli" placeholder="Contoh: SJ-2026-089">
+                </div>
+                <div style="flex: 1;">
+                  <label for="pilih-status-bayar-beli">Status Pembayaran</label>
+                  <select id="pilih-status-bayar-beli">
+                    <option value="Lunas">Lunas (Tunai / Transfer)</option>
+                    <option value="Tempo">Hutang / Tempo</option>
+                  </select>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-success btn-block" onclick="selesaikanTransaksiPembelian()" style="padding: 12px 18px; font-size: 0.95rem;">Simpan Pembelian &amp; Tambah Stok Batch</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 2: DAFTAR PEMBELIAN (RIWAYAT & FILTER) -->
+      <div id="panel-beli-riwayat" class="pembelian-panel" style="display: none;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <h2>Riwayat Pembelian (Barang Masuk)</h2>
+              <p style="color: var(--text-secondary); font-size: 0.85rem;">Catatan seluruh penerimaan stok barang dari pemasok beserta nomor batch dan tanggal kedaluwarsanya.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="eksporRiwayatPembelianCSV()">Ekspor CSV</button>
+          </div>
+
+          <!-- Filter by tanggal / pemasok / produk -->
+          <div class="filter-bar" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--ink-secondary);">Dari:</span>
+              <input type="date" id="filter-beli-tgl-mulai" onchange="renderRiwayatPembelian()" style="padding: 7px 12px; font-size: 0.85rem;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 0.82rem; font-weight: 600; color: var(--ink-secondary);">Sampai:</span>
+              <input type="date" id="filter-beli-tgl-akhir" onchange="renderRiwayatPembelian()" style="padding: 7px 12px; font-size: 0.85rem;">
+            </div>
+            <select id="filter-beli-pemasok" onchange="renderRiwayatPembelian()" style="min-width: 170px;">
+              <option value="">Semua Pemasok</option>
+            </select>
+            <select id="filter-beli-produk" onchange="renderRiwayatPembelian()" style="min-width: 170px;">
+              <option value="">Semua Produk</option>
+            </select>
+            <input type="text" id="filter-beli-cari" placeholder="Cari No. PO / Batch / Nota..." oninput="renderRiwayatPembelian()" style="flex: 1; min-width: 170px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilterPembelian()">Reset Filter</button>
+          </div>
+
+          <!-- Tabel Riwayat Pembelian -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>No. Pembelian</th>
+                  <th>Tgl Sampai di Toko</th>
+                  <th>Nama Supplier</th>
+                  <th>Produk &amp; Qty</th>
+                  <th>Batch &amp; Tgl Expired</th>
+                  <th>Total Pembelian</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tabel-riwayat-pembelian">
+                <!-- Diisi via renderRiwayatPembelian() -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-PANEL 3: INPUT PEMBELIAN VIA VOICE / OCR -->
+      <div id="panel-beli-voice-ocr" class="pembelian-panel" style="display: none;">
+        <div class="grid-2-col" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+          <!-- Card Voice Input Pembelian -->
+          <div class="card">
+            <h2>Input Pembelian via Suara</h2>
+            <p style="color: var(--ink-secondary); font-size: 0.88rem; margin-bottom: 14px;">
+              Ucapkan contoh: <em>"Masuk 25 botol Susu UHT 1L harga 15000 exp 2026-12-15"</em>.
+            </p>
+            <button type="button" class="btn btn-secondary" id="btn-rekam-beli" onclick="mulaiRekamPembelian()" style="width: 100%; margin-bottom: 12px;">
+              Mulai Rekam Suara Pembelian
+            </button>
+            <div class="result-box" id="hasil-suara-beli" style="min-height: 80px; background: var(--bg-nested-subtle); padding: 12px; border-radius: 12px; font-size: 0.88rem;">
+              <p style="color: var(--ink-secondary); margin: 0;"><em>Transkrip suara barang masuk akan muncul di sini...</em></p>
+            </div>
+          </div>
+
+          <!-- Card OCR Foto Nota Pemasok -->
+          <div class="card">
+            <h2>Input via OCR Nota / Faktur Pemasok</h2>
+            <p style="color: var(--ink-secondary); font-size: 0.88rem; margin-bottom: 14px;">
+              Unggah foto faktur pembelian dari pemasok untuk diekstrak otomatis ke daftar barang masuk.
+            </p>
+            <input type="file" id="input-foto-beli" accept="image/*" onchange="pratinjauFotoBeli(this)" style="margin-bottom: 10px; width: 100%;">
+            <div id="pratinjau-foto-beli" style="margin-bottom: 10px;"></div>
+            <button type="button" class="btn btn-secondary" id="btn-ekstrak-beli" onclick="ekstrakFotoBeli()" style="width: 100%; margin-bottom: 12px;" disabled>
+              Ekstrak Faktur dengan AI
+            </button>
+            <div class="result-box" id="hasil-foto-beli" style="min-height: 80px; background: var(--bg-nested-subtle); padding: 12px; border-radius: 12px; font-size: 0.88rem;">
+              <p style="color: var(--ink-secondary); margin: 0;"><em>Hasil ekstraksi faktur pembelian akan muncul di sini...</em></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Konfirmasi Ekstraksi ke Pembelian Baru -->
+        <div class="card" style="margin-top: 20px;">
+          <h2>Konfirmasi Hasil Voice / OCR ke Pembelian Baru</h2>
+          <form id="form-konfirmasi-ekstraksi-beli" onsubmit="konfirmasiEkstraksiKePembelian(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 14px; align-items: flex-end;">
+            <div>
+              <label for="ekstrak-beli-pemasok">Pemasok</label>
+              <input type="text" id="ekstrak-beli-pemasok" placeholder="Nama pemasok..." required>
+            </div>
+            <div>
+              <label for="ekstrak-beli-produk">Nama Produk</label>
+              <input type="text" id="ekstrak-beli-produk" placeholder="Terisi otomatis..." required>
+            </div>
+            <div>
+              <label for="ekstrak-beli-jumlah">Jumlah (Qty)</label>
+              <input type="number" id="ekstrak-beli-jumlah" min="1" value="10" required>
+            </div>
+            <div>
+              <label for="ekstrak-beli-harga">Harga Beli Satuan (Rp)</label>
+              <input type="number" id="ekstrak-beli-harga" min="0" value="15000" required>
+            </div>
+            <div>
+              <label for="ekstrak-beli-exp">Tanggal Expired Batch</label>
+              <input type="date" id="ekstrak-beli-exp" required>
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary" style="width: 100%;">+ Masukkan ke Pembelian Baru</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: ANALITIK AI (Fitur Cerdas Berbasis AI) -->
+    <section id="analitik-ai" class="section">
+      <header class="section-header">
+        <div>
+          <h1>🧠 Analitik AI &amp; Prediksi</h1>
+          <p class="section-sub">Analisis cerdas risiko kedaluwarsa, rekomendasi tindakan otomatis, proyeksi restock, dan evaluasi akurasi model</p>
+        </div>
+      </header>
+
+      <!-- SUB-TABS ANALITIK AI -->
+      <div class="settings-tabs" style="margin-bottom: 22px;">
+        <button type="button" class="settings-tab-btn active" id="tab-btn-ai-risiko" onclick="gantiTabAI('risiko')">⚡ Skor Risiko Kedaluwarsa</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-ai-rekomendasi" onclick="gantiTabAI('rekomendasi')">💡 Rekomendasi Tindakan</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-ai-restock" onclick="gantiTabAI('restock')">📈 Prediksi Restock</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-ai-akurasi" onclick="gantiTabAI('akurasi')">🎯 Riwayat Prediksi vs Aktual</button>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SUB-FITUR 1: SKOR RISIKO KEDALUWARSA PER BATCH               -->
+      <!-- ============================================================ -->
+      <div id="subpanel-ai-risiko" class="ai-subpanel active">
+        <!-- 3 Bento KPI Status Risiko -->
+        <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 20px;">
+          <div class="card" style="padding: 18px 20px;">
+            <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Risiko Tinggi (Merah)</span>
+            <p id="kpi-ai-merah" style="font-size: 1.8rem; font-weight: 800; color: #DC2626; margin: 6px 0 2px;">0 Batch</p>
+            <small style="color: var(--ink-secondary); font-size: 0.76rem;">Skor 70–100 • Stok diprediksi tidak akan habis</small>
+          </div>
+          <div class="card" style="padding: 18px 20px;">
+            <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Perlu Perhatian (Kuning)</span>
+            <p id="kpi-ai-kuning" style="font-size: 1.8rem; font-weight: 800; color: #D97706; margin: 6px 0 2px;">0 Batch</p>
+            <small style="color: var(--ink-secondary); font-size: 0.76rem;">Skor 31–69 • Perlu pemantauan &amp; rotasi FEFO</small>
+          </div>
+          <div class="card" style="padding: 18px 20px;">
+            <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Stok Aman (Hijau)</span>
+            <p id="kpi-ai-hijau" style="font-size: 1.8rem; font-weight: 800; color: var(--emerald-primary); margin: 6px 0 2px;">0 Batch</p>
+            <small style="color: var(--ink-secondary); font-size: 0.76rem;">Skor 0–30 • Stok diproyeksikan habis sebelum exp</small>
+          </div>
+        </div>
+
+        <!-- Tabel Skor Risiko Kedaluwarsa + Probabilitas % -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0;">⚡ Analisis Risiko Kedaluwarsa Per Batch</h2>
+              <p style="color: var(--ink-secondary); font-size: 0.85rem; margin-top: 2px;">Perhitungan skor risiko 0–100 dan probabilitas kedaluwarsa berbasis laju penjualan 14 hari</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <select id="filter-status-ai-risiko" onchange="filterTabelRisikoAI()" style="font-size: 0.84rem; padding: 6px 12px;">
+                <option value="all">Semua Status Risiko</option>
+                <option value="merah">Merah Saja (Risiko Tinggi)</option>
+                <option value="kuning">Kuning Saja (Perhatian)</option>
+                <option value="hijau">Hijau Saja (Aman)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 13%;">Kode Batch</th>
+                  <th style="width: 20%;">Nama Produk</th>
+                  <th style="width: 12%;">Tanggal Exp</th>
+                  <th style="width: 10%;">Sisa Hari</th>
+                  <th style="width: 10%;">Sisa Stok</th>
+                  <th style="width: 15%;">Status Risiko</th>
+                  <th style="width: 20%;">Probabilitas Kedaluwarsa</th>
+                </tr>
+              </thead>
+              <tbody id="table-ai-risiko">
+                <tr><td colspan="7" style="text-align:center; padding:18px;">Memuat analisis risiko AI...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SUB-FITUR 2: REKOMENDASI TINDAKAN OTOMATIS (AI ACTIONS)       -->
+      <!-- ============================================================ -->
+      <div id="subpanel-ai-rekomendasi" class="ai-subpanel" style="display: none;">
+        <div class="card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h2 style="font-size: 1.15rem; margin: 0; display: inline-flex; align-items: center; gap: 8px;">
+                  <svg class="modern-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  Rekomendasi Tindakan AI
+                </h2>
+                <span style="background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; padding: 2px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 600;">Google Gemini API</span>
+              </div>
+              <p style="color: var(--ink-secondary); font-size: 0.85rem; margin-top: 2px;">Saran tindakan cerdas real-time langsung dari Google Gemini LLM API untuk memaksimalkan penjualan &amp; mencegah kerugian kedaluwarsa</p>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-refresh-rekomendasi-llm" onclick="muatRekomendasiLLMGemini(true)" style="display: inline-flex; align-items: center; gap: 6px;">
+                <svg class="modern-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Analisis Ulang</span>
+              </button>
+              <select id="filter-jenis-tindakan-ai" onchange="renderRekomendasiTindakanAI()" style="font-size: 0.84rem; padding: 6px 12px;">
+                <option value="all">Semua Kategori (3 Kategori)</option>
+                <option value="diskon">Diskon (1 Minggu Sebelum Exp)</option>
+                <option value="donasi">Donasi Limbah (3–1 Hari Sebelum Exp)</option>
+                <option value="buang">Pemusnahan Limbah (0 Hari)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div id="container-kartu-rekomendasi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+            <!-- Kartu-kartu rekomendasi AI akan dimuat di sini -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SUB-FITUR 3: PREDIKSI RESTOCK (7-14 HARI) + SARAN BELANJA    -->
+      <!-- ============================================================ -->
+      <div id="subpanel-ai-restock" class="ai-subpanel" style="display: none;">
+        <!-- Filter Horizon & Produk Prediksi -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0;">📈 Proyeksi Penjualan &amp; Saran Kebutuhan Restock</h2>
+              <p style="color: var(--ink-secondary); font-size: 0.85rem; margin-top: 2px;">Estimasi penjualan 7–14 hari ke depan menggunakan moving average terbobot &amp; kalkulasi safety stock</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="font-size: 0.82rem; font-weight: 700; color: var(--ink-secondary);">Horizon Prediksi:</label>
+                <select id="ai-restock-target-hari" onchange="hitungUlangRestockAI()" style="font-size: 0.84rem; padding: 6px 10px;">
+                  <option value="7">7 Hari ke Depan</option>
+                  <option value="14" selected>14 Hari ke Depan</option>
+                </select>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <label style="font-size: 0.82rem; font-weight: 700; color: var(--ink-secondary);">Pilih Produk:</label>
+                <select id="ai-restock-pilih-produk" onchange="updateGrafikProyeksiRestock()" style="font-size: 0.84rem; padding: 6px 10px; min-width: 170px;">
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grafik Garis Proyeksi Penjualan AI -->
+          <div style="position: relative; height: 280px; width: 100%; margin-bottom: 10px;">
+            <canvas id="chartPrediksiRestock"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabel Rekomendasi Qty Belanja -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <h2 style="font-size: 1.15rem; margin: 0;">🛒 Rekomendasi Qty Belanja Per Produk</h2>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="hitungUlangRestockAI()">🔄 Hitung Ulang AI</button>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 24%;">Nama Produk</th>
+                  <th style="width: 15%;">Rata-rata/Hari</th>
+                  <th style="width: 15%;">Sisa Stok</th>
+                  <th style="width: 16%;">Estimasi Habis</th>
+                  <th style="width: 15%;">Saran Qty Belanja</th>
+                  <th style="width: 15%;">Status Kebutuhan</th>
+                </tr>
+              </thead>
+              <tbody id="table-restock">
+                <tr><td colspan="6" style="text-align: center; padding: 18px;">Menghitung kebutuhan restock...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================================ -->
+      <!-- SUB-FITUR 4: RIWAYAT PREDIKSI VS AKTUAL (EVALUASI AKURASI)   -->
+      <!-- ============================================================ -->
+      <div id="subpanel-ai-akurasi" class="ai-subpanel" style="display: none;">
+        <!-- 4 Bento KPI Akurasi Model -->
+        <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 20px;">
+          <div class="card" style="padding: 18px 20px;">
+            <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Rata-rata Akurasi</span>
+            <p id="kpi-ai-akurasi-persen" style="font-size: 1.8rem; font-weight: 800; color: var(--emerald-primary); margin: 6px 0 2px;">94.2%</p>
+            <small style="color: var(--ink-secondary); font-size: 0.76rem;">Ketepatan model vs realisasi kasir</small>
+          </div>
+          <div class="card" style="padding: 18px 20px;">
+            <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Mean Absolute Error (MAE)</span>
+            <p id="kpi-ai-mae" style="font-size: 1.8rem; font-weight: 800; color: var(--ink-charcoal); margin: 6px 0 2px;">±1.6 Unit</p>
+            <small style="color: var(--ink-secondary); font-size: 0.76rem;">Rata-rata selisih prediksi per hari</small>
+          </div>
+          <div class="card" style="padding: 18px 20px;">
+            <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Prediksi Tervalidasi</span>
+            <p id="kpi-ai-total-validasi" style="font-size: 1.8rem; font-weight: 800; color: #2563EB; margin: 6px 0 2px;">42 Periode</p>
+            <small style="color: var(--ink-secondary); font-size: 0.76rem;">Catatan historis yang dibandingkan</small>
+          </div>
+          <div class="card" style="padding: 18px 20px;">
+            <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Status Keandalan Model</span>
+            <p style="font-size: 1.25rem; font-weight: 800; color: #158050; margin: 10px 0 2px;">Sangat Andal 🎯</p>
+            <small style="color: var(--ink-secondary); font-size: 0.76rem;">Confidence Score: 0.94 / 1.00</small>
+          </div>
+        </div>
+
+        <!-- Grafik Visualisasi Evaluasi Prediksi vs Aktual -->
+        <div class="card" style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+            <div>
+              <h2 style="font-size: 1.15rem; margin: 0;">🎯 Evaluasi Grafis: Prediksi AI vs Penjualan Aktual</h2>
+              <p style="color: var(--ink-secondary); font-size: 0.85rem; margin-top: 2px;">Perbandingan garis prediksi algoritma cerdas terhadap angka penjualan kasir sesungguhnya</p>
+            </div>
+            <div class="chart-legend-pills">
+              <span class="chart-pill pill-pembelian"><span class="dot-pembelian" style="background: #93C5FD;"></span> Prediksi AI (Biru)</span>
+              <span class="chart-pill pill-penjualan"><span class="dot-penjualan" style="background: #137A4B;"></span> Penjualan Aktual (Emerald)</span>
+            </div>
+          </div>
+          <div style="position: relative; height: 260px; width: 100%;">
+            <canvas id="chartEvaluasiAkurasi"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabel Riwayat Prediksi vs Realisasi -->
+        <div class="card">
+          <h2 style="font-size: 1.15rem; margin-bottom: 14px;">📋 Log Evaluasi Akurasi Prediksi</h2>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 15%;">Periode Tanggal</th>
+                  <th style="width: 22%;">Nama Produk</th>
+                  <th style="width: 14%;">Prediksi AI</th>
+                  <th style="width: 14%;">Realisasi Aktual</th>
+                  <th style="width: 12%;">Deviasi / Selisih</th>
+                  <th style="width: 11%;">Tingkat Akurasi</th>
+                  <th style="width: 12%;">Status Evaluasi</th>
+                </tr>
+              </thead>
+              <tbody id="table-ai-akurasi">
+                <tr><td colspan="7" style="text-align: center; padding: 18px;">Memuat data evaluasi akurasi...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: LAPORAN REKAPITULASI -->
+    <section id="laporan" class="section">
+      <header class="section-header">
+        <div>
+          <h1>Laporan Rekapitulasi</h1>
+          <p class="section-sub">Rekapitulasi transaksi harian, bulanan, dan pergerakan stok barang</p>
+        </div>
+      </header>
+
+      <!-- 1. SUB-FITUR TABS: Harian vs Bulanan vs Tahunan -->
+      <div class="settings-tabs" style="max-width: 580px; margin-bottom: 20px;">
+        <button type="button" class="settings-tab-btn active" id="tab-btn-laporan-harian" onclick="gantiTabLaporan('harian')">📅 Laporan Harian</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-laporan-bulanan" onclick="gantiTabLaporan('bulanan')">🗓️ Laporan Bulanan</button>
+        <button type="button" class="settings-tab-btn" id="tab-btn-laporan-tahunan" onclick="gantiTabLaporan('tahunan')">📊 Laporan Tahunan</button>
+      </div>
+        <!-- 2. SUB-FITUR FILTER: Filter Periode & Produk -->
+        <div class="card" style="margin-bottom: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+          <h2 style="font-size: 1.15rem; margin: 0;">🔍 Filter Periode &amp; Produk</h2>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilterLaporan()">Reset Filter</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="terapkanFilterLaporan()">Terapkan Filter</button>
+          </div>
+        </div>
+
+        <!-- Baris 1 Filter: Periode & Produk -->
+        <div class="settings-form-row" style="margin-bottom: 12px;">
+          <!-- Periode Harian (Rentang Tanggal) -->
+          <div id="filter-wrap-harian">
+            <label style="font-size: 0.84rem; font-weight: 700; color: var(--ink-secondary); margin-bottom: 6px; display: block;">Rentang Tanggal Harian</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="date" id="laporan-tgl-mulai" style="flex: 1;" onchange="terapkanFilterLaporan()">
+              <span style="font-size: 0.85rem; color: var(--ink-muted); font-weight: 700;">s/d</span>
+              <input type="date" id="laporan-tgl-akhir" style="flex: 1;" onchange="terapkanFilterLaporan()">
+            </div>
+          </div>
+
+          <!-- Periode Bulanan (Bulan & Tahun) -->
+          <div id="filter-wrap-bulanan" style="display: none;">
+            <label style="font-size: 0.84rem; font-weight: 700; color: var(--ink-secondary); margin-bottom: 6px; display: block;">Periode Bulan &amp; Tahun</label>
+            <div style="display: flex; gap: 10px;">
+              <select id="laporan-pilih-bulan" style="flex: 1.3;" onchange="terapkanFilterLaporan()">
+                <option value="all">Semua Bulan (Tahun Berjalan)</option>
+                <option value="1">Januari</option>
+                <option value="2">Februari</option>
+                <option value="3">Maret</option>
+                <option value="4">April</option>
+                <option value="5">Mei</option>
+                <option value="6">Juni</option>
+                <option value="7">Juli</option>
+                <option value="8">Agustus</option>
+                <option value="9">September</option>
+                <option value="10">Oktober</option>
+                <option value="11" selected>November</option>
+                <option value="12">Desember</option>
+              </select>
+              <select id="laporan-pilih-tahun" style="flex: 0.9;" onchange="terapkanFilterLaporan()">
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Periode Tahunan (Tahun Laporan) -->
+          <div id="filter-wrap-tahunan" style="display: none;">
+            <label style="font-size: 0.84rem; font-weight: 700; color: var(--ink-secondary); margin-bottom: 6px; display: block;">Periode Tahun Laporan</label>
+            <div style="display: flex; gap: 10px;">
+              <select id="laporan-pilih-tahun-tahunan" style="width: 100%;" onchange="terapkanFilterLaporan()">
+                <option value="2026" selected>Tahun 2026 (Tahun Berjalan)</option>
+                <option value="2025">Tahun 2025</option>
+                <option value="all">Semua Tahun (Perbandingan Historis)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Filter Produk -->
+          <div>
+            <label style="font-size: 0.84rem; font-weight: 700; color: var(--ink-secondary); margin-bottom: 6px; display: block;">Pilih Produk</label>
+            <select id="laporan-filter-produk" onchange="terapkanFilterLaporan()">
+              <option value="all">Semua Produk Master</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Baris 2 Filter: Kategori & Jenis Transaksi -->
+        <div class="settings-form-row">
+          <div>
+            <label style="font-size: 0.84rem; font-weight: 700; color: var(--ink-secondary); margin-bottom: 6px; display: block;">Kategori Produk</label>
+            <select id="laporan-filter-kategori" onchange="terapkanFilterLaporan()">
+              <option value="all">Semua Kategori</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size: 0.84rem; font-weight: 700; color: var(--ink-secondary); margin-bottom: 6px; display: block;">Jenis Transaksi / Aktivitas</label>
+            <select id="laporan-filter-jenis" onchange="terapkanFilterLaporan()">
+              <option value="all">Semua Jenis (Penjualan &amp; Stok Masuk)</option>
+              <option value="penjualan">Penjualan Kasir</option>
+              <option value="pembelian">Pembelian Stok Masuk</option>
+              <option value="expired">Stok Berisiko Kedaluwarsa</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. RINGKASAN METRIK (Bento KPI Cards) -->
+      <div class="card-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 22px;">
+        <div class="card" style="padding: 18px 20px;">
+          <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Total Item Terjual</span>
+          <p id="kpi-laporan-qty-jual" style="font-size: 1.8rem; font-weight: 800; color: var(--emerald-primary); margin: 6px 0 2px;">0 Unit</p>
+          <small style="color: var(--ink-secondary); font-size: 0.76rem;">Penjualan barang ke konsumen</small>
+        </div>
+        <div class="card" style="padding: 18px 20px;">
+          <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Total Omzet Penjualan</span>
+          <p id="kpi-laporan-omzet" style="font-size: 1.8rem; font-weight: 800; color: var(--ink-charcoal); margin: 6px 0 2px;">Rp 0</p>
+          <small style="color: var(--ink-secondary); font-size: 0.76rem;">Nilai transaksi penjualan</small>
+        </div>
+        <div class="card" style="padding: 18px 20px;">
+          <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Total Stok Masuk</span>
+          <p id="kpi-laporan-qty-beli" style="font-size: 1.8rem; font-weight: 800; color: #2563EB; margin: 6px 0 2px;">0 Unit</p>
+          <small style="color: var(--ink-secondary); font-size: 0.76rem;">Pengadaan stok / batch masuk</small>
+        </div>
+        <div class="card" style="padding: 18px 20px;">
+          <span style="font-size: 0.74rem; text-transform: uppercase; font-weight: 700; color: var(--ink-muted); letter-spacing: 0.04em;">Estimasi Margin Kotor</span>
+          <p id="kpi-laporan-laba" style="font-size: 1.8rem; font-weight: 800; color: #158050; margin: 6px 0 2px;">Rp 0</p>
+          <small style="color: var(--ink-secondary); font-size: 0.76rem;">Selisih harga jual vs modal beli</small>
+        </div>
+      </div>
+
+      <!-- 4. SUB-FITUR: BENTO ROW (Dashboard Dampak Penyelamatan & Grafik Pembelian vs Penjualan) -->
+      <div class="bento-two-col" style="margin-bottom: 22px;">
+        <!-- Sub-Fitur: Dashboard Dampak Pangan di Laporan (Desain Rapi Sesuai Gaya Gambar 2) -->
+        <div class="card impact-card bento-emerald-card" style="margin-bottom: 0;">
+          <div class="emerald-card-glow"></div>
+          
+          <div class="emerald-card-header">
+            <div class="emerald-title-wrap">
+              <span class="emerald-sub-title">SISTEM ROTASI &amp; DAMPAK</span>
+              <h2 class="emerald-main-brand">Dampak Pangan</h2>
+            </div>
+            <div class="emerald-badge-simulasi">
+              <span>🌱 Periode Terfilter</span>
+            </div>
+          </div>
+
+          <!-- 4 Metrik dalam 1 Kartu: Pangan Terselamatkan & Pangan Tidak Terselamatkan -->
+          <div class="impact-metrics-grid" style="margin-bottom: 12px;">
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label">Pangan Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="num-val" id="dampak-laporan-kg">0</span> <span class="num-unit">kg</span>
+              </div>
+            </div>
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label">Nilai Rupiah Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="currency-prefix">Rp</span> <span class="num-val" id="dampak-laporan-rp">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="impact-metrics-grid" style="padding-top: 12px; border-top: 1px dashed rgba(255, 255, 255, 0.22); margin-top: 0; margin-bottom: 8px;">
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label" style="color: rgba(255, 255, 255, 0.85);">Pangan Tidak Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="num-val" id="dampak-laporan-gagal-kg">0</span> <span class="num-unit">kg</span>
+              </div>
+            </div>
+            <div class="impact-metric-card">
+              <p class="emerald-metric-label" style="color: rgba(255, 255, 255, 0.85);">Nilai Rupiah Tidak Terselamatkan</p>
+              <div class="emerald-big-number">
+                <span class="currency-prefix">Rp</span> <span class="num-val" id="dampak-laporan-gagal-rp">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Periode Waktu Terfilter -->
+          <div class="emerald-period-bar">
+            <span id="dampak-laporan-periode">📅 Periode: Memuat...</span>
+          </div>
+
+          <!-- Detail Dampak Per Periode -->
+          <div style="background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 12px 14px; margin-top: 14px; border: 1px solid rgba(255, 255, 255, 0.18);">
+            <div style="font-size: 0.78rem; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em; color: rgba(255, 255, 255, 0.9); margin-bottom: 8px;">
+              📊 Rincian Penyelamatan Periode
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+              <div style="background: rgba(0, 0, 0, 0.18); padding: 8px 4px; border-radius: 8px;">
+                <span style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.8); display: block;">Item Terselamatkan</span>
+                <strong id="dampak-laporan-unit" style="font-size: 0.92rem; color: #FFFFFF;">0 Unit</strong>
+              </div>
+              <div style="background: rgba(0, 0, 0, 0.18); padding: 8px 4px; border-radius: 8px;">
+                <span style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.8); display: block;">Kepatuhan FEFO</span>
+                <strong id="dampak-laporan-efisiensi" style="font-size: 0.92rem; color: #FFFFFF;">0%</strong>
+              </div>
+              <div style="background: rgba(0, 0, 0, 0.18); padding: 8px 4px; border-radius: 8px;">
+                <span style="font-size: 0.7rem; color: rgba(255, 255, 255, 0.8); display: block;">Reduksi Karbon</span>
+                <strong id="dampak-laporan-co2" style="font-size: 0.92rem; color: #FFFFFF;">0 kg CO₂e</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer Asumsi & FEFO -->
+          <div class="emerald-card-footer" style="margin-top: 14px;">
+            <p class="emerald-asumsi-text" id="dampak-laporan-asumsi">
+              * Dihitung berdasarkan rotasi stok FEFO per periode (rata-rata 0,35 kg/unit, estimasi 70% stok aktif terselamatkan).
+            </p>
+            <div class="emerald-fefo-badge">
+              <span class="fefo-icon">⚡</span>
+              <span><strong>Rotasi FEFO:</strong> Penjualan terjadwal memprioritaskan batch mendekati kedaluwarsa</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sub-Fitur: Grafik Pembelian vs Penjualan -->
+        <div class="card bento-card" style="margin-bottom: 0; display: flex; flex-direction: column;">
+          <div class="bento-card-header" style="margin-bottom: 12px;">
+            <div>
+              <span class="bento-card-sub" id="laporan-chart-sub">Perbandingan Volume Transaksi</span>
+              <h2 id="laporan-chart-title" style="font-size: 1.2rem; margin: 2px 0 0;">Grafik Pembelian vs Penjualan</h2>
+            </div>
+            <div class="chart-legend-pills">
+              <span class="chart-pill pill-pembelian"><span class="dot-pembelian"></span> Pembelian (Sage)</span>
+              <span class="chart-pill pill-penjualan"><span class="dot-penjualan"></span> Penjualan (Emerald)</span>
+            </div>
+          </div>
+          <div style="flex: 1; min-height: 280px; position: relative;">
+            <canvas id="chartLaporanBeliJual"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. TABEL REKAPITULASI DATA + EKSPOR -->
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <h2 id="judul-tabel-laporan">📋 Data Rekapitulasi Harian</h2>
+            <p id="sub-tabel-laporan" style="color: var(--ink-secondary); font-size: 0.85rem; margin-top: 2px;">Rincian transaksi pergerakan barang per hari</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button type="button" class="btn btn-success btn-sm" onclick="unduhLaporanExcel()">📥 Unduh Excel (CSV)</button>
+            <button type="button" class="btn btn-primary btn-sm" onclick="unduhLaporanPDF()">🖨️ Cetak / Unduh PDF</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead id="head-tabel-laporan"></thead>
+            <tbody id="body-tabel-laporan"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- SECTION 8: NOTIFIKASI BOT -->
+    <section id="notif-bot" class="section">
+      <header class="section-header">
+        <h1>Pengaturan Notifikasi Bot (Telegram / WhatsApp)</h1>
+      </header>
+      <form class="card" onsubmit="event.preventDefault(); simpanDanTesBot();">
+        <label>ID Telegram / Nomor WhatsApp Pemilik</label>
+        <input type="text" id="inputChatId" placeholder="Masukkan Chat ID / No HP" required>
+        <div class="checkbox-group">
+          <label><input type="checkbox" checked> Peringatan Batch Kedaluwarsa (Hitam/Merah)</label>
+          <label><input type="checkbox" checked> Peringatan Stok Menipis</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Simpan Pengaturan Bot</button>
+      </form>
+    </section>
+
+    <!-- SECTION 9: PENGATURAN SISTEM & AKUN -->
+    <section id="pengaturan" class="section">
+      <header class="section-header">
+        <div>
+          <h1>⚙️ Pengaturan Sistem & Akun</h1>
+          <p style="color: var(--text-secondary); font-size: 0.9rem;">Kelola profil akun, hak akses staf, batas stok menipis, kategori/satuan, dan log aktivitas.</p>
+        </div>
+      </header>
+
+      <!-- Navigasi Sub-Tab Pengaturan -->
+      <div class="settings-tabs">
+        <button type="button" class="settings-tab-btn active" onclick="bukaTabPengaturan('tab-profil', this)">👤 Profil Akun</button>
+        <button type="button" class="settings-tab-btn" onclick="bukaTabPengaturan('tab-pengguna', this)">👥 Manajemen Pengguna</button>
+        <button type="button" class="settings-tab-btn" onclick="bukaTabPengaturan('tab-threshold', this)">📉 Threshold Stok Menipis</button>
+        <button type="button" class="settings-tab-btn" onclick="bukaTabPengaturan('tab-satuan-kategori', this)">🏷️ Satuan & Kategori</button>
+        <button type="button" class="settings-tab-btn" onclick="bukaTabPengaturan('tab-audit-log', this)">📋 Log Aktivitas (Audit)</button>
+      </div>
+
+      <!-- SUB-FITUR 1: PROFIL AKUN -->
+      <div id="tab-profil" class="settings-panel active">
+        <div class="card">
+          <h2>Profil Akun Aktif</h2>
+          <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 16px;">Perbarui informasi nama, foto profil, kontak, dan kata sandi akun Anda.</p>
+          <form id="form-profil-akun" onsubmit="simpanProfilAkun(event)">
+            <div class="profile-settings-grid">
+              <div class="profile-avatar-box">
+                <img id="preview-profil-foto" src="https://ui-avatars.com/api/?name=Admin+Toko&background=2e7d32&color=fff" alt="Foto Profil" class="profile-avatar-large">
+                <label for="input-profil-foto" class="btn btn-secondary btn-sm" style="margin-top: 10px; cursor: pointer; display: inline-block;">📷 Ubah Foto</label>
+                <input type="file" id="input-profil-foto" accept="image/*" style="display: none;" onchange="pratinjauFotoProfil(this)">
+                <button type="button" class="btn btn-sm" style="margin-top: 6px; background:#e2e8f0; color:#334155;" onclick="resetFotoProfil()">Reset Foto</button>
+              </div>
+              <div class="profile-fields-box">
+                <div class="settings-form-row">
+                  <div>
+                    <label>Username (ID Login)</label>
+                    <input type="text" id="profil-username" disabled style="background-color: #f1f5f9; cursor: not-allowed;">
+                  </div>
+                  <div>
+                    <label>Peran & Jam Shift</label>
+                    <input type="text" id="profil-role-shift" disabled style="background-color: #f1f5f9; cursor: not-allowed;">
+                  </div>
+                </div>
+                <label>Nama Lengkap Tampilan</label>
+                <input type="text" id="profil-nama" required placeholder="Contoh: Budi Santoso">
+
+                <div class="settings-form-row">
+                  <div>
+                    <label>Nomor Telepon / WhatsApp</label>
+                    <input type="text" id="profil-telepon" placeholder="Contoh: 0812-3456-7890">
+                  </div>
+                  <div>
+                    <label>Alamat Email</label>
+                    <input type="email" id="profil-email" placeholder="Contoh: staf@freshlog.id">
+                  </div>
+                </div>
+
+                <label>Kata Sandi Baru <small style="font-weight:normal; color:#64748b;">(Kosongkan jika tidak ingin mengubah password)</small></label>
+                <input type="password" id="profil-password" placeholder="Masukkan password baru...">
+
+                <div style="margin-top: 18px;">
+                  <button type="submit" class="btn btn-primary">💾 Simpan Perubahan Profil</button>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- SUB-FITUR 2: MANAJEMEN PENGGUNA (ADMIN ONLY) -->
+      <div id="tab-pengguna" class="settings-panel">
+        <div id="user-mgmt-restricted" class="card card-warning" style="display: none;">
+          <h3>🔒 Akses Terbatas (Khusus Admin)</h3>
+          <p style="margin-top: 6px; color: var(--text-secondary);">Maaf, hanya pengguna dengan peran <strong>Admin</strong> yang dapat menambah, mengubah, atau menghapus akun staf.</p>
+        </div>
+
+        <div id="user-mgmt-content">
+          <div class="card">
+            <h2 id="judul-form-pengguna">Tambah / Ubah Akun Pengguna</h2>
+            <form id="form-manajemen-pengguna" onsubmit="simpanAkunPengguna(event)">
+              <input type="hidden" id="edit-user-original-key" value="">
+              <div class="settings-form-row">
+                <div>
+                  <label>Username Login</label>
+                  <input type="text" id="mgmt-username" required placeholder="Contoh: staf3">
+                </div>
+                <div>
+                  <label>Nama Lengkap</label>
+                  <input type="text" id="mgmt-nama" required placeholder="Contoh: Andi (Staf Gudang)">
+                </div>
+              </div>
+              <div class="settings-form-row">
+                <div>
+                  <label>Peran (Role)</label>
+                  <select id="mgmt-role" required>
+                    <option value="staff">Staf Toko</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Label Jabatan</label>
+                  <input type="text" id="mgmt-label-role" required placeholder="Contoh: Staf 3 / Kasir">
+                </div>
+              </div>
+              <div class="settings-form-row">
+                <div>
+                  <label>Jadwal Shift Kerja</label>
+                  <input type="text" id="mgmt-shift" required placeholder="Contoh: 07.00 - 15.00 WIB">
+                </div>
+                <div>
+                  <label>Kontak (No. HP / Email)</label>
+                  <input type="text" id="mgmt-kontak" placeholder="Contoh: 0813-xxxx-xxxx">
+                </div>
+              </div>
+              <div class="settings-form-row">
+                <div>
+                  <label>Password Login</label>
+                  <input type="text" id="mgmt-password" required placeholder="Masukkan password akun">
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                  <div style="display: flex; gap: 10px; align-items: center; margin-top: 14px;">
+                    <button type="submit" class="btn btn-primary" id="btn-submit-pengguna" style="flex: 1; height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">➕ Simpan Pengguna</button>
+                    <button type="button" class="btn btn-secondary" id="btn-batal-edit-pengguna" style="display: none; height: 44px; align-items: center; justify-content: center;" onclick="batalEditPengguna()">Batal Ubah</button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <div class="card">
+            <h2>Daftar Pengguna Terdaftar</h2>
+            <div class="table-container" style="margin-top: 12px;">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Nama Lengkap</th>
+                    <th>Peran</th>
+                    <th>Jam Shift</th>
+                    <th>Kontak</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="tabel-manajemen-pengguna"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-FITUR 3: PENGATURAN THRESHOLD STOK MENIPIS (PER PRODUK) -->
+      <div id="tab-threshold" class="settings-panel">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <h2>Pengaturan Threshold Stok Menipis (Per Produk)</h2>
+              <p style="color: var(--text-secondary); font-size: 0.88rem;">Tentukan batas minimum stok tiap produk. Jika stok batch &le; batas ini, produk akan ditandai sebagai <strong>Stok Menipis</strong> di Dashboard.</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 10px 14px; border-radius: 8px; border: 1px solid #e2e8f0;">
+              <label style="margin: 0; font-size: 0.85rem;">Default Global:</label>
+              <input type="number" id="input-default-threshold" min="1" value="15" style="width: 80px; padding: 6px 10px;">
+              <button type="button" class="btn btn-secondary btn-sm" onclick="terapkanDefaultThresholdSemua()">Terapkan ke Semua</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="table-threshold">
+              <thead>
+                <tr>
+                  <th style="width: 28%;">Nama Produk</th>
+                  <th style="width: 20%;">Kategori</th>
+                  <th style="width: 14%;">Total Stok</th>
+                  <th style="width: 12%;">Satuan</th>
+                  <th style="width: 13%;">Batas Threshold</th>
+                  <th style="width: 13%;">Status Stok</th>
+                </tr>
+              </thead>
+              <tbody id="tabel-threshold-produk"></tbody>
+            </table>
+          </div>
+          <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn btn-primary" onclick="simpanSemuaThresholdProduk()">💾 Simpan Pengaturan Threshold</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-FITUR 4: PENGATURAN SATUAN & KATEGORI -->
+      <div id="tab-satuan-kategori" class="settings-panel">
+        <div class="settings-two-col">
+          <!-- Kartu Kategori Produk -->
+          <div class="card">
+            <h2>🏷️ Kategori Produk</h2>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 12px;">Daftar kategori yang tampil di formulir produk, batch, dan filter inventaris.</p>
+            <form onsubmit="tambahKategoriBaru(event)" style="display: flex; gap: 8px; margin-bottom: 16px;">
+              <input type="text" id="input-kategori-baru" required placeholder="Contoh: Makanan Beku / Roti" style="flex: 1;">
+              <button type="submit" class="btn btn-primary">➕ Tambah</button>
+            </form>
+            <div id="daftar-chip-kategori" class="settings-tag-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-FITUR 5: LOG AKTIVITAS (AUDIT) -->
+      <div id="tab-audit-log" class="settings-panel">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+            <div>
+              <h2>📋 Log Aktivitas Sistem (Audit Trail)</h2>
+              <p style="color: var(--text-secondary); font-size: 0.88rem;">Rekam jejak seluruh aktivitas pengguna (login, perubahan stok, kasir, ekstraksi AI, dan konfigurasi).</p>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-success btn-sm" onclick="eksporLogAktivitasCSV()">📥 Ekspor CSV</button>
+              <button type="button" class="btn btn-danger btn-sm" id="btn-hapus-log" onclick="bersihkanLogAktivitas()">🗑️ Bersihkan Log</button>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <input type="text" id="search-audit-log" placeholder="🔍 Cari pengguna, aksi, atau detail..." oninput="renderTabelLogAktivitas()" style="flex: 1; min-width: 220px;">
+            <select id="filter-kategori-log" onchange="renderTabelLogAktivitas()">
+              <option value="">Semua Kategori Aktivitas</option>
+              <option value="Autentikasi">Autentikasi (Login)</option>
+              <option value="Inventaris">Inventaris & Batch</option>
+              <option value="Produk Master">Produk Master</option>
+              <option value="AI Smart Input">AI Smart Input</option>
+              <option value="Pengaturan">Pengaturan & Akun</option>
+              <option value="Pemasok">Pemasok</option>
+            </select>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Waktu</th>
+                  <th>Pengguna</th>
+                  <th>Peran</th>
+                  <th>Kategori</th>
+                  <th>Aktivitas</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody id="tabel-audit-log"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+  <!-- POP-UP MODAL 1: FORM PRODUK MASTER -->
+  <div class="modal" id="modal-produk">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-produk-title">Tambah Produk Master Baru</h2>
+        <button class="close-modal" onclick="closeModal('modal-produk')">✕</button>
+      </div>
+      <form id="form-produk">
+        <input type="hidden" id="prod-sku-lama" value="">
+        <label>Nama Produk</label>
+        <input type="text" id="prod-nama" required placeholder="Contoh: Susu UHT 1L">
+        <label>Kode Barcode / SKU</label>
+        <div style="display: flex; gap: 8px; align-items: stretch; margin-bottom: 12px;">
+          <input type="text" id="prod-sku" required placeholder="Contoh: 899123456789" style="flex: 1; margin-bottom: 0;">
+          <button type="button" class="btn btn-secondary" onclick="bukaScannerKamera('sku-produk')" style="display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;">
+            <svg class="modern-icon" style="width: 17px; height: 17px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="8" x2="7" y2="16"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="17" y1="8" x2="17" y2="16"/></svg>
+            <span>Scan Kamera</span>
+          </button>
+        </div>
+        <label>Kategori</label>
+        <select id="prod-kategori" required>
+          <option value="Makanan Fresh">🥬 Makanan Segar & Sayuran</option>
+          <option value="Minuman & Dairy">🥛 Minuman & Olahan Susu</option>
+          <option value="Frozen Food">❄️ Makanan Beku (Frozen Food)</option>
+          <option value="Snack & Kue">🍪 Camilan, Kue & Biskuit</option>
+          <option value="Bahan Pokok">🌾 Bahan Pokok & Sembako</option>
+          <option value="Makanan Kaleng">🥫 Makanan Instan & Kaleng</option>
+          <option value="Bumbu Dapur">🌶️ Bumbu & Rempah Dapur</option>
+          <option value="Perawatan Rumah">🧹 Pembersih & Perawatan Rumah</option>
+          <option value="Perawatan Tubuh">🧼 Perawatan Tubuh & Sabun</option>
+          <option value="Kosmetik">💄 Kosmetik & Kecantikan</option>
+          <option value="Kesehatan">💊 Kesehatan, Suplemen & Obat</option>
+          <option value="Kebutuhan Bayi">👶 Kebutuhan Bayi & Anak</option>
+          <option value="Pakan Hewan">🐱 Perlengkapan & Pakan Hewan</option>
+          <option value="Pakaian & Tekstil">👕 Pakaian & Tekstil</option>
+          <option value="Perkakas">🔨 Perkakas & Alat Rumah Tangga</option>
+          <option value="Mainan & Hobi">🧸 Mainan Anak & Alat Hobi</option>
+          <option value="Alat Tulis">✏️ Alat Tulis Kantor (ATK)</option>
+          <option value="Elektronik">🔌 Elektronik & Aksesoris Gadget</option>
+          <option value="Otomotif">🏍️ Perlengkapan Otomotif</option>
+        </select>
+        <div class="settings-form-row">
+          <div>
+            <label>Harga Beli (Rp)</label>
+            <input type="number" id="prod-harga-beli" min="0" required placeholder="15000">
+          </div>
+          <div>
+            <label>Harga Jual (Rp)</label>
+            <input type="number" id="prod-harga-jual" min="0" required placeholder="18000">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-produk')">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-produk">Simpan Produk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- POP-UP MODAL 2: FORM BATCH BARU -->
+  <div class="modal" id="modal-batch">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-batch-title">Tambah Batch Baru (Stok Masuk)</h2>
+        <button class="close-modal" onclick="closeModal('modal-batch')">✕</button>
+      </div>
+      <form id="form-batch">
+        <input type="hidden" id="batch-kode-lama" value="">
+        <label>Pilih Produk Master</label>
+        <select id="batch-kategori" onchange="filterProdukByKategori()" required>
+          <option value="">pilih Kategori</option>
+          <option value="Makanan Fresh">🥬 Makanan Segar & Sayuran</option>
+          <option value="Minuman & Dairy">🥛 Minuman & Olahan Susu</option>
+          <option value="Frozen Food">❄️ Makanan Beku (Frozen Food)</option>
+          <option value="Snack & Kue">🍪 Camilan, Kue & Biskuit</option>
+          <option value="Bahan Pokok">🌾 Bahan Pokok & Sembako</option>
+          <option value="Makanan Kaleng">🥫 Makanan Instan & Kaleng</option>
+          <option value="Bumbu Dapur">🌶️ Bumbu & Rempah Dapur</option>
+          <option value="Perawatan Rumah">🧹 Pembersih & Perawatan Rumah</option>
+          <option value="Perawatan Tubuh">🧼 Perawatan Tubuh & Sabun</option>
+          <option value="Kosmetik">💄 Kosmetik & Kecantikan</option>
+          <option value="Kesehatan">💊 Kesehatan, Suplemen & Obat</option>
+          <option value="Kebutuhan Bayi">👶 Kebutuhan Bayi & Anak</option>
+          <option value="Pakan Hewan">🐱 Perlengkapan & Pakan Hewan</option>
+          <option value="Pakaian & Tekstil">👕 Pakaian & Tekstil</option>
+          <option value="Perkakas">🔨 Perkakas & Alat Rumah Tangga</option>
+          <option value="Mainan & Hobi">🧸 Mainan Anak & Alat Hobi</option>
+          <option value="Alat Tulis">✏️ Alat Tulis Kantor (ATK)</option>
+          <option value="Elektronik">🔌 Elektronik & Aksesoris Gadget</option>
+          <option value="Otomotif">🏍️ Perlengkapan Otomotif</option>
+        </select>
+        <!-- 2. DROPDOWN PRODUK (Otomatis muncul setelah kategori di atas dipilih) -->
+      <label>Pilih jenis</label>
+      <select id="select-produk-master" required disabled>
+        <option value="" disabled selected>-- Pilih jenis Dulu --</option>
+      </select>
+
+      <label>Kode Batch Manual</label>
+      <input type="text" id="batch-kode" required placeholder="Contoh: BTC-202611-01">
+
+      <div class="settings-form-row">
+        <div>
+          <label>Jumlah Masuk (Pcs)</label>
+          <input type="number" id="batch-jumlah" min="0" required placeholder="24">
+        </div>
+        <div>
+          <label>Tanggal Kedaluwarsa</label>
+          <input type="date" id="batch-exp" required>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-batch')">Batal</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-batch">Simpan Batch</button>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+
+<!-- MODAL DETAIL TRANSAKSI PENJUALAN & ALOKASI BATCH FEFO -->
+<div id="modal-detail-penjualan" class="modal">
+  <div class="modal-content" style="max-width: 620px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-hairline); padding-bottom: 12px; margin-bottom: 16px;">
+      <div>
+        <h2 id="modal-penjualan-faktur" style="margin: 0; font-size: 1.25rem; color: var(--ink-charcoal);">Detail Transaksi Penjualan</h2>
+        <span id="modal-penjualan-waktu" style="font-size: 0.82rem; color: var(--ink-secondary);">-</span>
+      </div>
+      <span class="close" onclick="closeModal('modal-detail-penjualan')">&times;</span>
+    </div>
+    <div id="modal-detail-penjualan-body">
+      <!-- Diisi oleh tampilkanDetailPenjualan() -->
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-hairline); padding-top: 14px; margin-top: 16px;">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-detail-penjualan')">Tutup</button>
+      <button type="button" class="btn btn-primary" onclick="cetakStrukModal()">Cetak Struk Transaksi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DETAIL TRANSAKSI PEMBELIAN (BARANG MASUK) -->
+<div id="modal-detail-pembelian" class="modal">
+  <div class="modal-content" style="max-width: 640px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-hairline); padding-bottom: 12px; margin-bottom: 16px;">
+      <div>
+        <h2 id="modal-pembelian-faktur" style="margin: 0; font-size: 1.25rem; color: var(--ink-charcoal);">Detail Transaksi Pembelian</h2>
+        <span id="modal-pembelian-waktu" style="font-size: 0.82rem; color: var(--ink-secondary);">-</span>
+      </div>
+      <span class="close" onclick="closeModal('modal-detail-pembelian')">&times;</span>
+    </div>
+    <div id="modal-detail-pembelian-body">
+      <!-- Diisi oleh tampilkanDetailPembelian() -->
+    </div>
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-hairline); padding-top: 14px; margin-top: 16px;">
+      <button type="button" class="btn btn-secondary" onclick="closeModal('modal-detail-pembelian')">Tutup</button>
+      <button type="button" class="btn btn-primary" onclick="window.print()">Cetak Bukti Barang Masuk</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL SCANNER BARCODE / QR CODE VIA KAMERA (HTML5-QRCODE) -->
+<div id="modal-scanner-kamera" class="modal">
+  <div class="modal-content" style="max-width: 520px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-hairline); padding-bottom: 12px; margin-bottom: 14px;">
+      <div>
+        <h2 style="margin: 0; font-size: 1.2rem; color: var(--ink-charcoal);">Scan Barcode / QR Code</h2>
+        <span id="scanner-subtitle-mode" style="font-size: 0.82rem; color: var(--ink-secondary);">Arahkan kamera ke Barcode / QR Code produk</span>
+      </div>
+      <button type="button" class="close-modal" onclick="tutupScannerKamera()">✕</button>
+    </div>
+
+    <div style="margin-bottom: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+      <select id="pilih-kamera-scanner" onchange="gantiPerangkatKameraScanner()" style="flex: 1; min-width: 170px;">
+        <option value="">Mendeteksi kamera perangkat...</option>
+      </select>
+      <button type="button" id="btn-toggle-torch" class="btn btn-secondary btn-sm" onclick="toggleSenterKamera()" style="display: none; align-items: center; gap: 4px;">
+        <span>🔦 Senter</span>
+      </button>
+      <label for="input-file-qr-barcode" class="btn btn-secondary btn-sm" style="margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <span>📁 Scan Gambar</span>
+      </label>
+      <input type="file" id="input-file-qr-barcode" accept="image/*" onchange="scanBarcodeDariFile(this)" style="display: none;">
+    </div>
+
+    <!-- Area Viewport Kamera html5-qrcode -->
+    <div class="scanner-viewport-wrap">
+      <div id="html5-qrcode-reader"></div>
+      <div id="scanner-laser" class="scanner-laser-line"></div>
+    </div>
+
+    <!-- Info Status Pemindaian & Tips Jarak -->
+    <div id="scanner-status-box" style="margin-top: 10px; padding: 9px 14px; background: var(--bg-nested-subtle); border-radius: 12px; font-size: 0.84rem; color: var(--ink-secondary); text-align: center;">
+      Menyiapkan kamera pemindai...
+    </div>
+
+    <!-- Notifikasi Hasil Scan Terakhir -->
+    <div id="scanner-result-box" style="display: none; margin-top: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 10px 14px; text-align: center;">
+      <span style="font-size: 0.8rem; color: #166534; font-weight: 700;">✅ Terdeteksi: </span>
+      <strong id="scanner-result-code" style="font-size: 1rem; color: var(--emerald-primary);">-</strong>
+    </div>
+
+    <!-- Input Manual Fallback jika Kamera Buram / Terkendala -->
+    <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+      <input type="text" id="manual-scan-input" placeholder="Atau ketik/paste Barcode / SKU di sini..." style="flex: 1; margin: 0; font-size: 0.88rem;" onkeypress="if(event.key==='Enter') submitScanManual()">
+      <button type="button" class="btn btn-primary btn-sm" onclick="submitScanManual()" style="white-space: nowrap;">Gunakan</button>
+    </div>
+
+    <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-hairline); padding-top: 12px; margin-top: 14px; flex-wrap: wrap; gap: 8px;">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="simulasiScanCepat('899123456789')" style="font-size: 0.78rem;" title="Barcode Susu UHT 1L">Contoh Susu</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="simulasiScanCepat('899999900001')" style="font-size: 0.78rem;" title="Barcode Roti Tawar">Contoh Roti</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="simulasiScanCepat('BTC-001')" style="font-size: 0.78rem;" title="QR Code Batch">Contoh QR</button>
+      </div>
+      <button type="button" class="btn btn-danger btn-sm" onclick="tutupScannerKamera()">Tutup Kamera</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KONFIRMASI AKSI AKHIR BATCH (ANALITIK AI) -->
+<div id="modal-konfirmasi-aksi-batch" class="modal">
+  <div class="modal-content" style="max-width: 460px; text-align: center; padding: 24px;">
+    <div style="width: 56px; height: 56px; border-radius: 50%; background: #e0f2fe; color: #0284c7; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 16px auto;" id="modal-konfirmasi-icon">
+      ⚡
+    </div>
+    <h2 id="modal-konfirmasi-title" style="font-size: 1.25rem; margin-bottom: 10px; color: var(--ink-charcoal);">Konfirmasi Aksi Akhir</h2>
+    <p id="modal-konfirmasi-deskripsi" style="font-size: 0.95rem; line-height: 1.6; color: #334155; margin-bottom: 22px;">
+      Tandai batch ini TERJUAL? Stok akan berkurang 20 kg dan tercatat di Dampak Pangan.
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button type="button" class="btn btn-secondary" style="flex: 1; justify-content: center;" onclick="tutupModalKonfirmasiAksiBatch()">Batal</button>
+      <button type="button" class="btn btn-primary" id="btn-eksekusi-konfirmasi-batch" style="flex: 1.2; justify-content: center;" onclick="eksekusiAksiBatchKonfirmasi()">Ya, Lanjutkan</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div id="toast-container" style="position: fixed; bottom: 24px; right: 24px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
+  <script src="Freshlog.js"></script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 780" width="100%" height="100%" style="background:#0F172A; font-family:'Segoe UI', system-ui, -apple-system, sans-serif;">
+  <defs>
+    <filter id="erdShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="575" y="45" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="800">FRESHLOG — ENTITY RELATIONSHIP DIAGRAM (ERD)</text>
+  <text x="575" y="70" text-anchor="middle" fill="#94A3B8" font-size="13">Relasi Skema Database Ternormalisasi 3NF Berbasis Integritas Transaksional</text>
+
+  <!-- Table 1: USERS -->
+  <g transform="translate(60, 100)" filter="url(#erdShadow)">
+    <rect width="250" height="200" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.8"/>
+    <rect width="250" height="34" rx="8" fill="#1D4ED8"/>
+    <text x="125" y="23" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">USERS</text>
+    <text x="15" y="60" fill="#93C5FD" font-size="12" font-weight="700">🔑 id <tspan fill="#64748B">[UUID, PK]</tspan></text>
+    <text x="15" y="85" fill="#E2E8F0" font-size="12">username <tspan fill="#64748B">[VARCHAR, UK]</tspan></text>
+    <text x="15" y="110" fill="#E2E8F0" font-size="12">password_hash <tspan fill="#64748B">[VARCHAR]</tspan></text>
+    <text x="15" y="135" fill="#E2E8F0" font-size="12">role <tspan fill="#F59E0B">[ADMIN / STAFF]</tspan></text>
+    <text x="15" y="160" fill="#E2E8F0" font-size="12">nama_lengkap <tspan fill="#64748B">[VARCHAR]</tspan></text>
+    <text x="15" y="185" fill="#E2E8F0" font-size="12">created_at <tspan fill="#64748B">[TIMESTAMP]</tspan></text>
+  </g>
+
+  <!-- Table 2: PRODUCTS -->
+  <g transform="translate(450, 100)" filter="url(#erdShadow)">
+    <rect width="260" height="225" rx="8" fill="#1E293B" stroke="#10B981" stroke-width="1.8"/>
+    <rect width="260" height="34" rx="8" fill="#047857"/>
+    <text x="130" y="23" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">PRODUCTS (MASTER)</text>
+    <text x="15" y="60" fill="#A7F3D0" font-size="12" font-weight="700">🔑 id <tspan fill="#64748B">[UUID, PK]</tspan></text>
+    <text x="15" y="85" fill="#E2E8F0" font-size="12">sku <tspan fill="#64748B">[VARCHAR, Barcode UK]</tspan></text>
+    <text x="15" y="110" fill="#E2E8F0" font-size="12">nama_produk <tspan fill="#64748B">[VARCHAR]</tspan></text>
+    <text x="15" y="135" fill="#E2E8F0" font-size="12">kategori <tspan fill="#64748B">[VARCHAR]</tspan></text>
+    <text x="15" y="160" fill="#E2E8F0" font-size="12">harga_beli <tspan fill="#64748B">[INTEGER, Modal]</tspan></text>
+    <text x="15" y="185" fill="#E2E8F0" font-size="12">harga_jual <tspan fill="#64748B">[INTEGER, Jual]</tspan></text>
+    <text x="15" y="210" fill="#E2E8F0" font-size="12">satuan <tspan fill="#64748B">[kg, pcs, unit]</tspan></text>
+  </g>
+
+  <!-- Table 3: BATCHES -->
+  <g transform="translate(830, 100)" filter="url(#erdShadow)">
+    <rect width="260" height="250" rx="8" fill="#1E293B" stroke="#F59E0B" stroke-width="1.8"/>
+    <rect width="260" height="34" rx="8" fill="#B45309"/>
+    <text x="130" y="23" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">BATCHES (INVENTARIS)</text>
+    <text x="15" y="60" fill="#FDE68A" font-size="12" font-weight="700">🔑 id <tspan fill="#64748B">[UUID, PK]</tspan></text>
+    <text x="15" y="85" fill="#E2E8F0" font-size="12">batch_id <tspan fill="#64748B">[VARCHAR, UK]</tspan></text>
+    <text x="15" y="110" fill="#FDE68A" font-size="12" font-weight="700">🔗 product_id <tspan fill="#64748B">[FK -> PRODUCTS]</tspan></text>
+    <text x="15" y="135" fill="#E2E8F0" font-size="12">stock <tspan fill="#64748B">[FLOAT, Sisa Stok]</tspan></text>
+    <text x="15" y="160" fill="#E2E8F0" font-size="12">initial_stock <tspan fill="#64748B">[FLOAT, Stok Awal]</tspan></text>
+    <text x="15" y="185" fill="#E2E8F0" font-size="12">tanggal_kedaluwarsa <tspan fill="#EF4444">[DATE, Exp]</tspan></text>
+    <text x="15" y="210" fill="#E2E8F0" font-size="12">status <tspan fill="#64748B">[AKTIF/TERJUAL/DONASI/BUSUK]</tspan></text>
+    <text x="15" y="235" fill="#E2E8F0" font-size="12">supplier_name <tspan fill="#64748B">[VARCHAR]</tspan></text>
+  </g>
+
+  <!-- Table 4: SALES -->
+  <g transform="translate(60, 420)" filter="url(#erdShadow)">
+    <rect width="250" height="225" rx="8" fill="#1E293B" stroke="#EC4899" stroke-width="1.8"/>
+    <rect width="250" height="34" rx="8" fill="#BE185D"/>
+    <text x="125" y="23" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">SALES (TRANSAKSI KASIR)</text>
+    <text x="15" y="60" fill="#FBCFE8" font-size="12" font-weight="700">🔑 id <tspan fill="#64748B">[UUID, PK]</tspan></text>
+    <text x="15" y="85" fill="#E2E8F0" font-size="12">invoice_number <tspan fill="#64748B">[VARCHAR, UK]</tspan></text>
+    <text x="15" y="110" fill="#E2E8F0" font-size="12">tanggal_transaksi <tspan fill="#64748B">[TIMESTAMP]</tspan></text>
+    <text x="15" y="135" fill="#E2E8F0" font-size="12">total_omzet <tspan fill="#64748B">[INTEGER]</tspan></text>
+    <text x="15" y="160" fill="#E2E8F0" font-size="12">total_modal <tspan fill="#64748B">[INTEGER]</tspan></text>
+    <text x="15" y="185" fill="#E2E8F0" font-size="12">laba_kotor <tspan fill="#64748B">[INTEGER]</tspan></text>
+    <text x="15" y="210" fill="#FBCFE8" font-size="12" font-weight="700">🔗 user_id <tspan fill="#64748B">[FK -> USERS]</tspan></text>
+  </g>
+
+  <!-- Table 5: SALE_ITEMS -->
+  <g transform="translate(450, 420)" filter="url(#erdShadow)">
+    <rect width="260" height="200" rx="8" fill="#1E293B" stroke="#EC4899" stroke-width="1.8"/>
+    <rect width="260" height="34" rx="8" fill="#BE185D"/>
+    <text x="130" y="23" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">SALE_ITEMS</text>
+    <text x="15" y="60" fill="#FBCFE8" font-size="12" font-weight="700">🔑 id <tspan fill="#64748B">[UUID, PK]</tspan></text>
+    <text x="15" y="85" fill="#FBCFE8" font-size="12" font-weight="700">🔗 sale_id <tspan fill="#64748B">[FK -> SALES]</tspan></text>
+    <text x="15" y="110" fill="#FDE68A" font-size="12" font-weight="700">🔗 batch_id <tspan fill="#64748B">[FK -> BATCHES (FEFO)]</tspan></text>
+    <text x="15" y="135" fill="#E2E8F0" font-size="12">qty <tspan fill="#64748B">[FLOAT]</tspan></text>
+    <text x="15" y="160" fill="#E2E8F0" font-size="12">harga_satuan <tspan fill="#64748B">[INTEGER]</tspan></text>
+    <text x="15" y="185" fill="#E2E8F0" font-size="12">subtotal <tspan fill="#64748B">[INTEGER]</tspan></text>
+  </g>
+
+  <!-- Table 6: DAMPAK_PANGAN -->
+  <g transform="translate(830, 420)" filter="url(#erdShadow)">
+    <rect width="260" height="250" rx="8" fill="#064E3B" stroke="#34D399" stroke-width="2"/>
+    <rect width="260" height="34" rx="8" fill="#047857"/>
+    <text x="130" y="23" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">DAMPAK_PANGAN (ESG SOURCE)</text>
+    <text x="15" y="60" fill="#A7F3D0" font-size="12" font-weight="700">🔑 id <tspan fill="#64748B">[DP-YYYYMMDD-XXX, PK]</tspan></text>
+    <text x="15" y="85" fill="#FDE68A" font-size="12" font-weight="700">🔗 batch_id <tspan fill="#64748B">[FK -> BATCHES]</tspan></text>
+    <text x="15" y="110" fill="#E2E8F0" font-size="12">produk_nama <tspan fill="#64748B">[VARCHAR]</tspan></text>
+    <text x="15" y="135" fill="#E2E8F0" font-size="12">qty_kg <tspan fill="#64748B">[FLOAT, Bobot kg]</tspan></text>
+    <text x="15" y="160" fill="#E2E8F0" font-size="12">nilai_rupiah <tspan fill="#64748B">[INTEGER, Nilai Rp]</tspan></text>
+    <text x="15" y="185" fill="#34D399" font-size="12" font-weight="700">tipe <tspan fill="#64748B">[TERSELAMATKAN / TIDAK]</tspan></text>
+    <text x="15" y="210" fill="#E2E8F0" font-size="12">aksi <tspan fill="#64748B">[TERJUAL / DONASI / BUSUK]</tspan></text>
+    <text x="15" y="235" fill="#93C5FD" font-size="12" font-weight="700">🔗 user_id <tspan fill="#64748B">[FK -> USERS]</tspan></text>
+  </g>
+
+  <!-- Connectors -->
+  <!-- PRODUCTS -> BATCHES (1 to N) -->
+  <line x1="710" y1="180" x2="830" y2="180" stroke="#10B981" stroke-width="2"/>
+  <text x="770" y="170" fill="#A7F3D0" font-size="11" font-weight="700">1 : N</text>
+
+  <!-- SALES -> SALE_ITEMS (1 to N) -->
+  <line x1="310" y1="520" x2="450" y2="520" stroke="#EC4899" stroke-width="2"/>
+  <text x="380" y="510" fill="#FBCFE8" font-size="11" font-weight="700">1 : N</text>
+
+  <!-- BATCHES -> SALE_ITEMS (1 to N) -->
+  <path d="M 900 350 L 900 385 L 580 385 L 580 420" fill="none" stroke="#F59E0B" stroke-width="2"/>
+  <text x="740" y="380" fill="#FDE68A" font-size="11" font-weight="700">FEFO Cut</text>
+
+  <!-- BATCHES -> DAMPAK_PANGAN (1 to 1/N) -->
+  <line x1="960" y1="350" x2="960" y2="420" stroke="#34D399" stroke-width="2.5"/>
+  <text x="970" y="385" fill="#34D399" font-size="11" font-weight="700">1 : 1</text>
+</svg>

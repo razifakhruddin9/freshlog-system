@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1150 720" width="100%" height="100%" style="background:#0F172A; font-family:'Segoe UI', system-ui, -apple-system, sans-serif;">
+  <defs>
+    <linearGradient id="gradRoot" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064E3B"/>
+    </linearGradient>
+    <filter id="shadowBox" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="575" y="45" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="800" letter-spacing="-0.02em">FRESHLOG — PETA SITUS SISTEM (SITEMAP)</text>
+  <text x="575" y="70" text-anchor="middle" fill="#94A3B8" font-size="13">Hierarki Struktur Navigasi Single Page Application (SPA)</text>
+
+  <!-- Root Node -->
+  <rect x="425" y="95" width="300" height="52" rx="26" fill="url(#gradRoot)" stroke="#34D399" stroke-width="2" filter="url(#shadowBox)"/>
+  <text x="575" y="126" text-anchor="middle" fill="#FFFFFF" font-size="15" font-weight="800">FreshLog Platform Core</text>
+
+  <!-- Horizontal Distribution Line -->
+  <line x1="85" y1="180" x2="1065" y2="180" stroke="#475569" stroke-width="2"/>
+  <line x1="575" y1="147" x2="575" y2="180" stroke="#34D399" stroke-width="2"/>
+
+  <!-- Vertical Branch Lines -->
+  <line x1="85" y1="180" x2="85" y2="215" stroke="#475569" stroke-width="2"/>
+  <line x1="248" y1="180" x2="248" y2="215" stroke="#475569" stroke-width="2"/>
+  <line x1="411" y1="180" x2="411" y2="215" stroke="#475569" stroke-width="2"/>
+  <line x1="575" y1="180" x2="575" y2="215" stroke="#475569" stroke-width="2"/>
+  <line x1="738" y1="180" x2="738" y2="215" stroke="#475569" stroke-width="2"/>
+  <line x1="901" y1="180" x2="901" y2="215" stroke="#475569" stroke-width="2"/>
+  <line x1="1065" y1="180" x2="1065" y2="215" stroke="#475569" stroke-width="2"/>
+
+  <!-- 7 Navigation Modules -->
+  <!-- 1. Dashboard -->
+  <g transform="translate(15, 215)">
+    <rect width="140" height="42" rx="8" fill="#1E293B" stroke="#10B981" stroke-width="1.8" filter="url(#shadowBox)"/>
+    <text x="70" y="26" text-anchor="middle" fill="#A7F3D0" font-size="12" font-weight="700">1. Dashboard</text>
+    <rect y="52" width="140" height="150" rx="8" fill="#0F172A" stroke="#334155"/>
+    <text x="10" y="75" fill="#E2E8F0" font-size="10.5">• Bento KPI Stats</text>
+    <text x="10" y="98" fill="#E2E8F0" font-size="10.5">• Batch Kritis</text>
+    <text x="10" y="121" fill="#E2E8F0" font-size="10.5">• Kartu Dampak</text>
+    <text x="10" y="144" fill="#E2E8F0" font-size="10.5">• Grafik 7 Hari</text>
+    <text x="10" y="167" fill="#E2E8F0" font-size="10.5">• FEFO Badge</text>
+  </g>
+
+  <!-- 2. Stok & Batch -->
+  <g transform="translate(178, 215)">
+    <rect width="140" height="42" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.8" filter="url(#shadowBox)"/>
+    <text x="70" y="26" text-anchor="middle" fill="#BFDBFE" font-size="12" font-weight="700">2. Stok &amp; Batch</text>
+    <rect y="52" width="140" height="150" rx="8" fill="#0F172A" stroke="#334155"/>
+    <text x="10" y="75" fill="#E2E8F0" font-size="10.5">• Master Produk</text>
+    <text x="10" y="98" fill="#E2E8F0" font-size="10.5">• Tambah Batch</text>
+    <text x="10" y="121" fill="#E2E8F0" font-size="10.5">• Tabel FEFO</text>
+    <text x="10" y="144" fill="#E2E8F0" font-size="10.5">• Edit Data</text>
+    <text x="10" y="167" fill="#E2E8F0" font-size="10.5">• Hapus Koreksi</text>
+  </g>
+
+  <!-- 3. Penjualan -->
+  <g transform="translate(341, 215)">
+    <rect width="140" height="42" rx="8" fill="#1E293B" stroke="#EC4899" stroke-width="1.8" filter="url(#shadowBox)"/>
+    <text x="70" y="26" text-anchor="middle" fill="#FBCFE8" font-size="12" font-weight="700">3. Penjualan POS</text>
+    <rect y="52" width="140" height="150" rx="8" fill="#0F172A" stroke="#334155"/>
+    <text x="10" y="75" fill="#E2E8F0" font-size="10.5">• Grid Katalog</text>
+    <text x="10" y="98" fill="#E2E8F0" font-size="10.5">• Keranjang POS</text>
+    <text x="10" y="121" fill="#E2E8F0" font-size="10.5">• Auto-FEFO Cut</text>
+    <text x="10" y="144" fill="#E2E8F0" font-size="10.5">• Cetak Nota</text>
+    <text x="10" y="167" fill="#E2E8F0" font-size="10.5">• Sync Dampak</text>
+  </g>
+
+  <!-- 4. Pembelian -->
+  <g transform="translate(505, 215)">
+    <rect width="140" height="42" rx="8" fill="#1E293B" stroke="#06B6D4" stroke-width="1.8" filter="url(#shadowBox)"/>
+    <text x="70" y="26" text-anchor="middle" fill="#A5F3FC" font-size="12" font-weight="700">4. Pembelian</text>
+    <rect y="52" width="140" height="150" rx="8" fill="#0F172A" stroke="#334155"/>
+    <text x="10" y="75" fill="#E2E8F0" font-size="10.5">• Input Pemasok</text>
+    <text x="10" y="98" fill="#E2E8F0" font-size="10.5">• OCR Scan Nota</text>
+    <text x="10" y="121" fill="#E2E8F0" font-size="10.5">• Riwayat Faktur</text>
+    <text x="10" y="144" fill="#E2E8F0" font-size="10.5">• Proyeksi Restock</text>
+    <text x="10" y="167" fill="#E2E8F0" font-size="10.5">• Saran Belanja</text>
+  </g>
+
+  <!-- 5. Analitik AI -->
+  <g transform="translate(668, 215)">
+    <rect width="140" height="42" rx="8" fill="#1E293B" stroke="#8B5CF6" stroke-width="1.8" filter="url(#shadowBox)"/>
+    <text x="70" y="26" text-anchor="middle" fill="#DDD6FE" font-size="12" font-weight="700">5. Analitik AI</text>
+    <rect y="52" width="140" height="150" rx="8" fill="#0F172A" stroke="#334155"/>
+    <text x="10" y="75" fill="#E2E8F0" font-size="10.5">• Skor Risiko (0-100)</text>
+    <text x="10" y="98" fill="#E2E8F0" font-size="10.5">• Preskriptif LLM</text>
+    <text x="10" y="121" fill="#E2E8F0" font-size="10.5">• Tombol [Terjual]</text>
+    <text x="10" y="144" fill="#E2E8F0" font-size="10.5">• Tombol [Donasi]</text>
+    <text x="10" y="167" fill="#E2E8F0" font-size="10.5">• Tombol [Busuk]</text>
+  </g>
+
+  <!-- 6. Laporan Rekap -->
+  <g transform="translate(831, 215)">
+    <rect width="140" height="42" rx="8" fill="#1E293B" stroke="#F59E0B" stroke-width="1.8" filter="url(#shadowBox)"/>
+    <text x="70" y="26" text-anchor="middle" fill="#FDE68A" font-size="12" font-weight="700">6. Laporan</text>
+    <rect y="52" width="140" height="150" rx="8" fill="#0F172A" stroke="#334155"/>
+    <text x="10" y="75" fill="#E2E8F0" font-size="10.5">• Tab Harian</text>
+    <text x="10" y="98" fill="#E2E8F0" font-size="10.5">• Tab Bulanan</text>
+    <text x="10" y="121" fill="#E2E8F0" font-size="10.5">• Tab Tahunan</text>
+    <text x="10" y="144" fill="#E2E8F0" font-size="10.5">• Dampak Terpadu</text>
+    <text x="10" y="167" fill="#E2E8F0" font-size="10.5">• Export &amp; Print</text>
+  </g>
+
+  <!-- 7. Pengaturan -->
+  <g transform="translate(995, 215)">
+    <rect width="140" height="42" rx="8" fill="#1E293B" stroke="#64748B" stroke-width="1.8" filter="url(#shadowBox)"/>
+    <text x="70" y="26" text-anchor="middle" fill="#CBD5E1" font-size="12" font-weight="700">7. Pengaturan</text>
+    <rect y="52" width="140" height="150" rx="8" fill="#0F172A" stroke="#334155"/>
+    <text x="10" y="75" fill="#E2E8F0" font-size="10.5">• Manajemen Akun</text>
+    <text x="10" y="98" fill="#E2E8F0" font-size="10.5">• Hak Akses Role</text>
+    <text x="10" y="121" fill="#E2E8F0" font-size="10.5">• Bot Telegram</text>
+    <text x="10" y="144" fill="#E2E8F0" font-size="10.5">• Backup Data</text>
+    <text x="10" y="167" fill="#E2E8F0" font-size="10.5">• Log Aktivitas</text>
+  </g>
+
+  <!-- Footer Indicator -->
+  <rect x="250" y="440" width="650" height="40" rx="20" fill="#1E293B" stroke="#334155"/>
+  <text x="575" y="465" text-anchor="middle" fill="#94A3B8" font-size="12">Navigasi Dinamis SPA (Section Toggle tanpa Full-Page Reload)</text>
+</svg>

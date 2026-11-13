@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 780" width="100%" height="100%" style="background:#0F172A; font-family:'Segoe UI', system-ui, -apple-system, sans-serif;">
+  <defs>
+    <linearGradient id="gradEmerald" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="gradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <linearGradient id="gradRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="100%" stop-color="#B91C1C"/>
+    </linearGradient>
+    <linearGradient id="gradPurple" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6"/>
+      <stop offset="100%" stop-color="#6D28D9"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#94A3B8"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#10B981"/>
+    </marker>
+  </defs>
+
+  <!-- Title & Subtitle -->
+  <text x="550" y="45" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="800" letter-spacing="-0.02em">FRESHLOG — USER FLOW UTAMA</text>
+  <text x="550" y="70" text-anchor="middle" fill="#94A3B8" font-size="13">Alur Operasional Role-Based Access Control (Admin vs Staf) &amp; Siklus Rotasi FEFO</text>
+
+  <!-- Node: Start -->
+  <rect x="475" y="100" width="150" height="42" rx="21" fill="url(#gradEmerald)" filter="url(#shadow)"/>
+  <text x="550" y="126" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="700">Mulai Akses App</text>
+  
+  <line x1="550" y1="142" x2="550" y2="175" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Node: Login -->
+  <rect x="440" y="175" width="220" height="50" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="550" y="205" text-anchor="middle" fill="#F8FAFC" font-size="14" font-weight="700">Halaman Login (RBAC)</text>
+
+  <line x1="550" y1="225" x2="550" y2="265" stroke="#94A3B8" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- Decision: Auth Check -->
+  <polygon points="550,265 670,310 550,355 430,310" fill="#1E293B" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+  <text x="550" y="306" text-anchor="middle" fill="#F8FAFC" font-size="12" font-weight="700">Verifikasi Role &amp;</text>
+  <text x="550" y="322" text-anchor="middle" fill="#F8FAFC" font-size="12" font-weight="700">Kredensial Password</text>
+
+  <!-- Lockout Branch (Left) -->
+  <line x1="430" y1="310" x2="220" y2="310" stroke="#EF4444" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="325" y="300" text-anchor="middle" fill="#FCA5A5" font-size="11" font-weight="600">Gagal 5x Berturut-turut</text>
+  <rect x="90" y="285" width="210" height="50" rx="10" fill="url(#gradRed)" filter="url(#shadow)"/>
+  <text x="195" y="308" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="800">Proteksi Brute-Force</text>
+  <text x="195" y="324" text-anchor="middle" fill="#FEE2E2" font-size="11">Lockout Akses 15 Menit</text>
+
+  <!-- Loop back from lockout to login -->
+  <path d="M 195 285 L 195 200 L 430 200" fill="none" stroke="#EF4444" stroke-dasharray="4,4" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Admin Branch (Right) -->
+  <line x1="670" y1="310" x2="880" y2="310" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="775" y="300" text-anchor="middle" fill="#93C5FD" font-size="11" font-weight="600">Valid: Role ADMIN</text>
+  
+  <rect x="800" y="285" width="210" height="50" rx="10" fill="url(#gradBlue)" filter="url(#shadow)"/>
+  <text x="905" y="315" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">PORTAL ADMIN</text>
+
+  <!-- Admin Tasks -->
+  <rect x="790" y="370" width="230" height="42" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="905" y="396" text-anchor="middle" fill="#E2E8F0" font-size="12">Master Produk (Harga Beli/Jual)</text>
+  
+  <rect x="790" y="425" width="230" height="42" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="905" y="451" text-anchor="middle" fill="#E2E8F0" font-size="12">Rekapitulasi Laporan Finansial</text>
+
+  <rect x="790" y="480" width="230" height="42" rx="8" fill="#1E293B" stroke="#3B82F6" stroke-width="1.2"/>
+  <text x="905" y="506" text-anchor="middle" fill="#E2E8F0" font-size="12">Konfigurasi Bot Telegram</text>
+
+  <line x1="905" y1="335" x2="905" y2="368" stroke="#3B82F6" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- Staff Branch (Down) -->
+  <line x1="550" y1="355" x2="550" y2="400" stroke="#10B981" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="560" y="380" fill="#6EE7B7" font-size="11" font-weight="600">Valid: Role STAF</text>
+  
+  <rect x="440" y="400" width="220" height="50" rx="10" fill="url(#gradEmerald)" filter="url(#shadow)"/>
+  <text x="550" y="430" text-anchor="middle" fill="#FFFFFF" font-size="13" font-weight="800">PORTAL OPERASIONAL STAF</text>
+
+  <!-- 3 Operasional Staf Pillars -->
+  <!-- Pillar 1: Barang Masuk -->
+  <rect x="60" y="495" width="280" height="150" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="60" y="495" width="280" height="32" rx="12" fill="#334155"/>
+  <text x="200" y="516" text-anchor="middle" fill="#38BDF8" font-size="12" font-weight="700">1. PENGADAAN (BARANG MASUK)</text>
+  <text x="200" y="550" text-anchor="middle" fill="#E2E8F0" font-size="12">• Tambah Batch Manual / Scan Faktur</text>
+  <text x="200" y="575" text-anchor="middle" fill="#E2E8F0" font-size="12">• AI Vision OCR Nota Ekstraksi</text>
+  <text x="200" y="600" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">✓ Stok Aktif Bertambah (FEFO)</text>
+
+  <!-- Pillar 2: Kasir POS -->
+  <rect x="410" y="495" width="280" height="150" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="410" y="495" width="280" height="32" rx="12" fill="#334155"/>
+  <text x="550" y="516" text-anchor="middle" fill="#34D399" font-size="12" font-weight="700">2. KASIR (BARANG KELUAR)</text>
+  <text x="550" y="550" text-anchor="middle" fill="#E2E8F0" font-size="12">• Transaksi Checkout Pelanggan</text>
+  <text x="550" y="575" text-anchor="middle" fill="#FBBF24" font-size="12" font-weight="600">• Auto-Deduction Exp Terdekat</text>
+  <text x="550" y="600" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">✓ Sinkron Dampak Terselamatkan</text>
+
+  <!-- Pillar 3: Penyelamatan AI -->
+  <rect x="750" y="550" width="290" height="150" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="750" y="550" width="290" height="32" rx="12" fill="#334155"/>
+  <text x="895" y="571" text-anchor="middle" fill="#C084FC" font-size="12" font-weight="700">3. ANALITIK AI &amp; MITIGASI</text>
+  <text x="895" y="605" text-anchor="middle" fill="#E2E8F0" font-size="12">• Evaluasi Skor Risiko (0-100)</text>
+  <text x="895" y="630" text-anchor="middle" fill="#E2E8F0" font-size="12">• Aksi: [Terjual] [Donasi] [Busuk]</text>
+  <text x="895" y="655" text-anchor="middle" fill="#F43F5E" font-size="12" font-weight="700">✓ Eksekusi Atomik &amp; Idempotent</text>
+
+  <!-- Connectors from Staff to Pillars -->
+  <path d="M 470 450 L 200 450 L 200 492" fill="none" stroke="#10B981" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <line x1="550" y1="450" x2="550" y2="492" stroke="#10B981" stroke-width="1.8" marker-end="url(#arrow)"/>
+  <path d="M 630 450 L 895 450 L 895 547" fill="none" stroke="#10B981" stroke-width="1.8" marker-end="url(#arrow)"/>
+
+  <!-- Unified Bottom Banner: Single Source of Truth -->
+  <rect x="60" y="690" width="980" height="48" rx="10" fill="#134E4A" stroke="#2DD4BF" stroke-width="1.5"/>
+  <text x="550" y="720" text-anchor="middle" fill="#CCFBF1" font-size="13" font-weight="700">🌐 SEMUA OPERASIONAL BERMUARA PADA: SINGLE SOURCE OF TRUTH (TABEL DAMPAK PANGAN &amp; DASHBOARD FEFO)</text>
+</svg>

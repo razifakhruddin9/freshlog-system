@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="100%" height="100%" style="background:#0F172A; font-family:'Segoe UI', system-ui, -apple-system, sans-serif;">
+  <defs>
+    <filter id="topoShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="5" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="600" y="45" text-anchor="middle" fill="#FFFFFF" font-size="22" font-weight="800">FRESHLOG — TOPOLOGI INFRASTRUKTUR CLOUD</text>
+  <text x="600" y="70" text-anchor="middle" fill="#94A3B8" font-size="13">Desain Arsitektur Production: Edge, PaaS Container, Database Managed Cluster &amp; External APIs</text>
+
+  <!-- Box 1: Client Devices -->
+  <rect x="50" y="100" width="220" height="230" rx="12" fill="#1E293B" stroke="#334155" stroke-width="1.8" filter="url(#topoShadow)"/>
+  <rect x="50" y="100" width="220" height="34" rx="12" fill="#334155"/>
+  <text x="160" y="123" text-anchor="middle" fill="#F8FAFC" font-size="12" font-weight="800">PERANGKAT KLIEN UMKM</text>
+  <rect x="65" y="150" width="190" height="40" rx="6" fill="#0F172A" stroke="#475569"/>
+  <text x="160" y="175" text-anchor="middle" fill="#E2E8F0" font-size="11.5">💻 PC Kasir (Chrome Desktop)</text>
+  <rect x="65" y="200" width="190" height="40" rx="6" fill="#0F172A" stroke="#475569"/>
+  <text x="160" y="225" text-anchor="middle" fill="#E2E8F0" font-size="11.5">📱 Tablet Gudang (PWA / Web)</text>
+  <rect x="65" y="250" width="190" height="40" rx="6" fill="#0F172A" stroke="#475569"/>
+  <text x="160" y="275" text-anchor="middle" fill="#E2E8F0" font-size="11.5">📲 HP Pemilik (Telegram App)</text>
+
+  <!-- Box 2: Edge Network (Cloudflare) -->
+  <rect x="340" y="100" width="200" height="230" rx="12" fill="#1E293B" stroke="#F59E0B" stroke-width="1.8" filter="url(#topoShadow)"/>
+  <rect x="340" y="100" width="200" height="34" rx="12" fill="#B45309"/>
+  <text x="440" y="123" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="800">EDGE SECURITY</text>
+  <rect x="355" y="150" width="170" height="40" rx="6" fill="#0F172A"/>
+  <text x="440" y="175" text-anchor="middle" fill="#FDE68A" font-size="11.5">Cloudflare DNS &amp; CDN</text>
+  <rect x="355" y="200" width="170" height="40" rx="6" fill="#0F172A"/>
+  <text x="440" y="225" text-anchor="middle" fill="#FDE68A" font-size="11.5">WAF &amp; DDoS Protection</text>
+  <rect x="355" y="250" width="170" height="40" rx="6" fill="#0F172A"/>
+  <text x="440" y="275" text-anchor="middle" fill="#FDE68A" font-size="11.5">SSL / TLS 1.3 Encryption</text>
+
+  <!-- Box 3: Cloud PaaS Container (Railway / Render / AWS) -->
+  <rect x="610" y="100" width="280" height="340" rx="12" fill="#1E293B" stroke="#3B82F6" stroke-width="2" filter="url(#topoShadow)"/>
+  <rect x="610" y="100" width="280" height="34" rx="12" fill="#1D4ED8"/>
+  <text x="750" y="123" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="800">CLOUD CONTAINER PLATFORM</text>
+  
+  <rect x="630" y="150" width="240" height="40" rx="6" fill="#0F172A" stroke="#3B82F6"/>
+  <text x="750" y="175" text-anchor="middle" fill="#93C5FD" font-size="12" font-weight="700">Nginx Reverse Proxy &amp; LB</text>
+
+  <!-- Multi-worker FastAPI -->
+  <rect x="630" y="205" width="240" height="110" rx="8" fill="#0F172A" stroke="#10B981" stroke-dasharray="3,3"/>
+  <text x="750" y="225" text-anchor="middle" fill="#34D399" font-size="11" font-weight="700">Uvicorn ASGI Worker Pool</text>
+  <rect x="645" y="235" width="210" height="30" rx="4" fill="#1E293B"/>
+  <text x="750" y="255" text-anchor="middle" fill="#E2E8F0" font-size="11">FastAPI Worker #1 (Core)</text>
+  <rect x="645" y="272" width="210" height="30" rx="4" fill="#1E293B"/>
+  <text x="750" y="292" text-anchor="middle" fill="#E2E8F0" font-size="11">FastAPI Worker #2 (Core)</text>
+
+  <!-- Cron Worker -->
+  <rect x="630" y="330" width="240" height="40" rx="6" fill="#0F172A" stroke="#F59E0B"/>
+  <text x="750" y="355" text-anchor="middle" fill="#FDE68A" font-size="11">APScheduler (Cron Pagi 07:00)</text>
+
+  <!-- Box 4: Database Managed Tier -->
+  <rect x="960" y="100" width="190" height="340" rx="12" fill="#1E293B" stroke="#8B5CF6" stroke-width="2" filter="url(#topoShadow)"/>
+  <rect x="960" y="100" width="190" height="34" rx="12" fill="#6D28D9"/>
+  <text x="1055" y="123" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="800">MANAGED DATA TIER</text>
+  <rect x="975" y="150" width="160" height="65" rx="6" fill="#0F172A"/>
+  <text x="1055" y="175" text-anchor="middle" fill="#DDD6FE" font-size="11.5" font-weight="700">Managed PostgreSQL</text>
+  <text x="1055" y="195" text-anchor="middle" fill="#94A3B8" font-size="10.5">Primary Cluster (ACID)</text>
+  
+  <rect x="975" y="225" width="160" height="50" rx="6" fill="#0F172A"/>
+  <text x="1055" y="248" text-anchor="middle" fill="#DDD6FE" font-size="11">Read Replica</text>
+  <text x="1055" y="265" text-anchor="middle" fill="#94A3B8" font-size="10">Standby Failover</text>
+
+  <rect x="975" y="285" width="160" height="60" rx="6" fill="#0F172A"/>
+  <text x="1055" y="308" text-anchor="middle" fill="#DDD6FE" font-size="11" font-weight="700">Redis In-Memory</text>
+  <text x="1055" y="328" text-anchor="middle" fill="#94A3B8" font-size="10">Cache &amp; Lockout State</text>
+
+  <!-- Box 5: External APIs (Bottom) -->
+  <rect x="340" y="490" width="550" height="150" rx="12" fill="#1E293B" stroke="#EC4899" stroke-width="2" filter="url(#topoShadow)"/>
+  <rect x="340" y="490" width="550" height="34" rx="12" fill="#BE185D"/>
+  <text x="615" y="513" text-anchor="middle" fill="#FFFFFF" font-size="12" font-weight="800">EXTERNAL CLOUD APIs</text>
+  <rect x="365" y="540" width="230" height="75" rx="8" fill="#0F172A"/>
+  <text x="480" y="568" text-anchor="middle" fill="#FBCFE8" font-size="12" font-weight="700">Google Gemini Cloud</text>
+  <text x="480" y="588" text-anchor="middle" fill="#94A3B8" font-size="10.5">Flash-Lite LLM &amp; Vision OCR</text>
+
+  <rect x="635" y="540" width="230" height="75" rx="8" fill="#0F172A"/>
+  <text x="750" y="568" text-anchor="middle" fill="#FBCFE8" font-size="12" font-weight="700">Telegram Bot Server</text>
+  <text x="750" y="588" text-anchor="middle" fill="#94A3B8" font-size="10.5">Automated Alerting Gateway</text>
+
+  <!-- Connectors -->
+  <line x1="270" y1="215" x2="340" y2="215" stroke="#F59E0B" stroke-width="2"/>
+  <line x1="540" y1="215" x2="610" y2="215" stroke="#3B82F6" stroke-width="2"/>
+  <line x1="890" y1="215" x2="960" y2="215" stroke="#8B5CF6" stroke-width="2"/>
+  <line x1="750" y1="440" x2="750" y2="490" stroke="#EC4899" stroke-width="2"/>
+</svg>

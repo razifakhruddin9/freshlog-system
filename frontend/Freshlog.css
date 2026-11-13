@@ -400,6 +400,8 @@ body {
 }
 
 .nav-menu a {
+  cursor: pointer;
+  user-select: none;
   text-decoration: none;
   color: var(--ink-secondary);
   padding: 11px 16px;

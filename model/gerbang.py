@@ -21,7 +21,7 @@ except ImportError as e:
     def hitung_restock(**kwargs): 
         return {"rata_rata_harian": 4.5, "estimasi_habis_hari": 5, "saran_belanja": 35, "catatan": "Simulasi"}
     def hitung_riwayat(tahun): 
-        return {"pembelian":, "penjualan":}
+        return {"pembelian": 0, "penjualan": 0}
 
 # ── INISIALISASI FASTAPI ───────────────────────────────────────────────────
 app = FastAPI(

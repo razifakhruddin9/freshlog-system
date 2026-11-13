@@ -1,7 +1,7 @@
 import os
 import json
 import base64
-from datetime import date
+from datetime import date, datetime
 from typing import List
 
 # Muat environment variable dari .env jika ada
@@ -13,19 +13,19 @@ if os.path.exists(env_file):
             if line and not line.startswith("#") and "=" in line:
                 key, val = line.split("=", 1)
                 os.environ.setdefault(key.strip(), val.strip())
-
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 import re
 import requests
+import logging
 from pydantic import BaseModel, field_validator
 
 from skor_risiko import hitung_skor_risiko
-from rekomendasi import tentukan_saran
+from rekomendasi import tentukan_saran, generate_rekomendasi_gemini
 from restock import hitung_restock
 from riwayat import hitung_riwayat
 from beckend.bot import kirim_pesan_telegram
-from beckend.security import check_brute_force, track_failed_attempt, reset_failed_attempts
+from beckend.security import track_failed_attempt, check_brute_force, reset_failed_attempts, MAX_ATTEMPTS
 
 # ── Inisialisasi aplikasi FastAPI ──────────────────────────────────────────
 app = FastAPI(
@@ -108,6 +108,244 @@ def hitung_risiko(data: BatchInput):
     }
 
 
+# ── Endpoint Rekomendasi Preskriptif LLM (Google Gemini) ───────────────────
+class BatchItemInput(BaseModel):
+    code: str = ""
+    name: str = ""
+    category: str = ""
+    stock: float = 0
+    expiry_date: str = ""
+    sisa_hari: int = 0
+    skor_risiko: int = 0
+    status: str = "hijau"
+
+class RekomendasiAIInput(BaseModel):
+    batches: List[BatchItemInput]
+
+@app.post("/rekomendasi-ai")
+def endpoint_rekomendasi_ai(data: RekomendasiAIInput):
+    """
+    Menghasilkan rekomendasi tindakan preskriptif untuk Analitik AI &
+    saran tindakan per batch inventaris menggunakan Google Gemini LLM API.
+    """
+    batch_dicts = [b.dict() if hasattr(b, 'dict') else b.__dict__ for b in data.batches]
+    hasil = generate_rekomendasi_gemini(batch_dicts, api_key=GEMINI_API_KEY)
+    return hasil
+
+
+# ── Single Source of Truth: Tabel Dampak Pangan & Aksi Akhir Batch ─────────
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+DAMPAK_PANGAN_FILE = os.path.join(DATA_DIR, "dampak_pangan.json")
+BATCHES_STATE_FILE = os.path.join(DATA_DIR, "batches_state.json")
+
+# Data Awal Standar Dampak Pangan (Sumber Data Tunggal)
+DEFAULT_DAMPAK_PANGAN = [
+    {
+        "id": "DP-20261102-001",
+        "batch_id": "BTC-001",
+        "produk": "Susu UHT 1L",
+        "qty_kg": 60.0,
+        "nilai_rupiah": 3000000,
+        "tipe": "TERSELAMATKAN",
+        "aksi": "TERJUAL",
+        "tanggal": "2026-11-02",
+        "waktu": "2026-11-02T10:15:00",
+        "user_id": "admin"
+    },
+    {
+        "id": "DP-20261105-002",
+        "batch_id": "BTC-002",
+        "produk": "Roti Tawar Daging",
+        "qty_kg": 120.0,
+        "nilai_rupiah": 6000000,
+        "tipe": "TERSELAMATKAN",
+        "aksi": "TERJUAL",
+        "tanggal": "2026-11-05",
+        "waktu": "2026-11-05T14:30:00",
+        "user_id": "staf1"
+    },
+    {
+        "id": "DP-20261108-003",
+        "batch_id": "BTC-003",
+        "produk": "Yogurt Stroberi",
+        "qty_kg": 86.0,
+        "nilai_rupiah": 4311000,
+        "tipe": "TERSELAMATKAN",
+        "aksi": "DONASI",
+        "tanggal": "2026-11-08",
+        "waktu": "2026-11-08T11:00:00",
+        "user_id": "admin"
+    },
+    {
+        "id": "DP-20261109-004",
+        "batch_id": "BTC-EX-99",
+        "produk": "Tahu Sumedang",
+        "qty_kg": 15.0,
+        "nilai_rupiah": 225000,
+        "tipe": "TIDAK_TERSELAMATKAN",
+        "aksi": "BUSUK",
+        "tanggal": "2026-11-09",
+        "waktu": "2026-11-09T16:45:00",
+        "user_id": "staf2"
+    }
+]
+
+def muat_dampak_pangan():
+    if os.path.exists(DAMPAK_PANGAN_FILE):
+        try:
+            with open(DAMPAK_PANGAN_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return list(DEFAULT_DAMPAK_PANGAN)
+
+def simpan_dampak_pangan(data):
+    try:
+        with open(DAMPAK_PANGAN_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logging.error(f"Gagal menyimpan data dampak pangan: {e}")
+
+def muat_state_batches():
+    if os.path.exists(BATCHES_STATE_FILE):
+        try:
+            with open(BATCHES_STATE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def simpan_state_batches(data):
+    try:
+        with open(BATCHES_STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        logging.error(f"Gagal menyimpan state batch: {e}")
+
+
+class CatatAksiAkhirBatchInput(BaseModel):
+    batch_id: str
+    produk: str
+    aksi: str  # "TERJUAL", "DONASI", "BUSUK"
+    qty_kg: float
+    nilai_rupiah: int
+    user_id: str = "admin"
+
+@app.post("/dampak-pangan/catat-aksi-akhir")
+def endpoint_catat_aksi_akhir(data: CatatAksiAkhirBatchInput):
+    batch_id = data.batch_id.strip()
+    aksi_upper = data.aksi.strip().upper()
+    if aksi_upper not in ["TERJUAL", "DONASI", "BUSUK"]:
+        raise HTTPException(status_code=400, detail="Aksi harus berupa TERJUAL, DONASI, atau BUSUK.")
+
+    # 1. Cek idempotensi status batch di backend (Aturan: Satu batch hanya boleh punya SATU aksi final)
+    batches = muat_state_batches()
+    if batch_id in batches:
+        current_status = batches[batch_id].get("status", "AKTIF")
+        if current_status in ["TERJUAL", "DONASI", "BUSUK"]:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Batch '{batch_id}' sudah berstatus final ({current_status}). Aksi tidak dapat diproses lagi (idempotent)."
+            )
+
+    # 2. Transaksi atomik: ubah status batch menjadi final & stok = 0
+    now_iso = datetime.now().isoformat()
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    batches[batch_id] = {
+        "batch_id": batch_id,
+        "produk": data.produk,
+        "sisa_stok": 0.0,
+        "status": aksi_upper,
+        "updated_at": now_iso
+    }
+    simpan_state_batches(batches)
+
+    # 3. Simpan record ke tabel dampak_pangan (Single Source of Truth)
+    tipe_dampak = "TIDAK_TERSELAMATKAN" if aksi_upper == "BUSUK" else "TERSELAMATKAN"
+    record_id = f"DP-{datetime.now().strftime('%Y%m%d%H%M%S')}-{batch_id}"
+    record_baru = {
+        "id": record_id,
+        "batch_id": batch_id,
+        "produk": data.produk,
+        "qty_kg": float(data.qty_kg),
+        "nilai_rupiah": int(data.nilai_rupiah),
+        "tipe": tipe_dampak,
+        "aksi": aksi_upper,
+        "tanggal": today_str,
+        "waktu": now_iso,
+        "user_id": data.user_id or "admin"
+    }
+
+    dampak_list = muat_dampak_pangan()
+    dampak_list.insert(0, record_baru)
+    simpan_dampak_pangan(dampak_list)
+
+    return {
+        "status": "success",
+        "message": f"Batch {batch_id} berhasil dicatat sebagai {aksi_upper}.",
+        "record": record_baru,
+        "batch": batches[batch_id]
+    }
+
+
+class PenjualanNormalDampakInput(BaseModel):
+    batch_id: str
+    produk: str
+    qty_kg: float
+    nilai_rupiah: int
+    sisa_stok: float = 0.0
+    user_id: str = "admin"
+
+@app.post("/dampak-pangan/penjualan-normal")
+def endpoint_penjualan_normal_dampak(data: PenjualanNormalDampakInput):
+    batch_id = data.batch_id.strip()
+    batches = muat_state_batches()
+    
+    if batch_id not in batches:
+        batches[batch_id] = {
+            "batch_id": batch_id,
+            "produk": data.produk,
+            "sisa_stok": max(0.0, float(data.sisa_stok)),
+            "status": "TERJUAL" if data.sisa_stok <= 0 else "AKTIF"
+        }
+    else:
+        batches[batch_id]["sisa_stok"] = max(0.0, float(data.sisa_stok))
+        if batches[batch_id]["sisa_stok"] <= 0:
+            batches[batch_id]["status"] = "TERJUAL"
+    simpan_state_batches(batches)
+
+    # Simpan record penjualan normal ke dampak_pangan (Terselamatkan)
+    now_iso = datetime.now().isoformat()
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    record_id = f"DP-KASIR-{datetime.now().strftime('%Y%m%d%H%M%S')}-{batch_id}"
+    record_baru = {
+        "id": record_id,
+        "batch_id": batch_id,
+        "produk": data.produk,
+        "qty_kg": float(data.qty_kg),
+        "nilai_rupiah": int(data.nilai_rupiah),
+        "tipe": "TERSELAMATKAN",
+        "aksi": "TERJUAL",
+        "tanggal": today_str,
+        "waktu": now_iso,
+        "user_id": data.user_id or "admin"
+    }
+
+    dampak_list = muat_dampak_pangan()
+    dampak_list.insert(0, record_baru)
+    simpan_dampak_pangan(dampak_list)
+
+    return {"status": "success", "record": record_baru, "batch": batches.get(batch_id)}
+
+
+@app.get("/dampak-pangan/list")
+def endpoint_get_dampak_pangan():
+    return {"status": "success", "data": muat_dampak_pangan()}
+
+
+
+
 # ── Endpoint restock ───────────────────────────────────────────────────────
 class RestockInput(BaseModel):
     produk            : str
@@ -164,9 +402,18 @@ def get_riwayat(tahun: int = 2026):
     return hitung_riwayat(tahun)
 
 
-# ── Endpoint cek kesehatan ─────────────────────────────────────────────────
+# ── Endpoint cek kesehatan & Tampilan Frontend ──────────────────────────────
+from fastapi.responses import FileResponse
+
+@app.get("/api/health")
+def api_health():
+    return {"status": "API berjalan", "versi": "1.0.0"}
+
 @app.get("/")
 def root():
+    freshlog_html = os.path.join(os.path.dirname(__file__), "frontend", "Freshlog.html")
+    if os.path.exists(freshlog_html):
+        return FileResponse(freshlog_html)
     return {"status": "API berjalan", "versi": "1.0.0"}
 
 
@@ -341,33 +588,44 @@ DATABASE_PENGGUNA = {
     "staf2": {"password": "123", "role": "staff", "nama": "Siti (Staf 2)"},
 }
 
+logging.basicConfig(level=logging.DEBUG)
+
 @app.post("/login")
 def login_endpoint(data: LoginInput):
     user_key = data.username.strip().lower()
+    logging.debug(f"Memulai proses login untuk username: {user_key}")
+
     if not user_key:
         raise HTTPException(status_code=400, detail="Username tidak boleh kosong.")
+    if not data.password.strip():
+        raise HTTPException(status_code=400, detail="Password tidak boleh kosong.")    
 
     # 1. Cek proteksi brute-force dari beckend/security.py (blokir 15 menit jika >= 5 gagal)
+    logging.debug(f"Memeriksa brute force untuk username: {user_key}")
     check_brute_force(user_key)
 
     # 2. Verifikasi kecocokan username dan password
     user = DATABASE_PENGGUNA.get(user_key)
     if not user or user["password"] != data.password:
+        logging.debug(f"Percobaan login gagal untuk username: {user_key}")
         # Catat percobaan gagal
-        track_failed_attempt(user_key)
+        failed_count = track_failed_attempt(user_key)
+        sisa = max(0, MAX_ATTEMPTS - (failed_count or 0))
         raise HTTPException(
             status_code=401,
-            detail="Username atau kata sandi salah. Silakan periksa kembali."
+            detail=f"Username atau kata sandi salah. Percobaan salah ke-{failed_count} dari 5 (Sisa {sisa} kesempatan sebelum akun diblokir 15 menit)."
         )
 
     # 3. Verifikasi kesesuaian hak akses role jika dipilih
     if data.role and data.role != user["role"]:
+        logging.debug(f"Hak akses tidak sesuai untuk username: {user_key}")
         raise HTTPException(
             status_code=403,
             detail=f"Hak akses '{data.role}' tidak sesuai untuk akun '{data.username}'."
         )
 
     # 4. Berhasil login: reset tracker percobaan gagal
+    logging.debug(f"Login berhasil untuk username: {user_key}")
     reset_failed_attempts(user_key)
 
     return {
@@ -379,6 +637,13 @@ def login_endpoint(data: LoginInput):
             "role": user["role"]
         }
     }
+
+
+# ── Mount Frontend Static Files ────────────────────────────────────────────
+from fastapi.staticfiles import StaticFiles
+frontend_dir = os.path.join(os.path.dirname(__file__), "frontend")
+if os.path.exists(frontend_dir):
+    app.mount("/", StaticFiles(directory=frontend_dir, html=True), name="frontend")
 
 
 if __name__ == "__main__":

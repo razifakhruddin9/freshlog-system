@@ -1,7 +1,68 @@
+/* =============================================================================
+   KONFIGURASI PUSAT INTEGRASI BACKEND FASTAPI (FreshLog Engine)
+   ============================================================================= */
+const FRESHLOG_API_BASE = (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.protocol === "file:"))
+  ? "http://127.0.0.1:8000"
+  : "https://inventori-api-production.up.railway.app";
+
+// Helper pengecekan status koneksi backend FastAPI
+async function cekKoneksiBackend() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000);
+    const res = await fetch(`${FRESHLOG_API_BASE}/`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      console.log(`%c[FreshLog Backend]%c Terhubung ke FastAPI (${FRESHLOG_API_BASE})`, "color: #10B981; font-weight: bold;", "color: inherit;");
+      return true;
+    }
+  } catch (e) {
+    console.warn(`%c[FreshLog Backend]%c Offline di ${FRESHLOG_API_BASE}. Sistem berjalan dalam Mode Cache Lokal (LocalStorage).`, "color: #F59E0B; font-weight: bold;", "color: inherit;");
+  }
+  return false;
+}
+
+// Helper sinkronisasi data dampak pangan dari backend (Single Source of Truth)
+async function syncDampakPanganDariBackend() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2500);
+    const res = await fetch(`${FRESHLOG_API_BASE}/dampak-pangan/list`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const json = await res.json();
+      if (json && json.status === "success" && Array.isArray(json.data) && json.data.length > 0) {
+        localStorage.setItem("freshlog_dampak_pangan", JSON.stringify(json.data));
+        console.log(`[FreshLog Sync] Berhasil memuat ${json.data.length} catatan dampak pangan dari backend.`);
+        if (typeof renderDashboardDampakRingkas === "function") renderDashboardDampakRingkas();
+        if (typeof terapkanFilterLaporan === "function") terapkanFilterLaporan();
+      }
+    }
+  } catch (errSync) {
+    // Mode offline, biarkan membaca data lokal yang sudah ada
+  }
+}
+
 /* ========================================== */
 /* 1. NAVIGASI HALAMAN (SINGLE PAGE APP)      */
 /* ========================================== */
 function pindahHalaman(targetId) {
+  // Validasi Hak Akses Role: Staf tidak diperkenankan mengakses Pembelian (Barang Masuk)
+  const userRoleEl = document.getElementById("user-role");
+  const currentRoleText = userRoleEl ? userRoleEl.innerText : "";
+  const akunAktifData = (typeof daftarAkun !== "undefined" && typeof activeUserKey !== "undefined") ? daftarAkun[activeUserKey] : null;
+  const currentRole = ((akunAktifData && akunAktifData.role) || currentRoleText || "").toLowerCase();
+  const isUserStaff = currentRole.includes("staf") || currentRole === "staff";
+
+  if (targetId === "pembelian" && isUserStaff) {
+    if (typeof tampilkanToastModern === "function") {
+      tampilkanToastModern("Akses Dibatasi: Fitur Pembelian (Barang Masuk) hanya dapat diakses oleh Admin Toko.", "warning");
+    } else {
+      alert("Akses Dibatasi: Fitur Pembelian (Barang Masuk) hanya dapat diakses oleh Admin Toko.");
+    }
+    return;
+  }
+
   if (targetId === "prediksi") {
     targetId = "analitik-ai";
   }
@@ -25,6 +86,9 @@ function pindahHalaman(targetId) {
     targetSection.style.display = "block";
 
     // Panggil API saat buka halaman terkait
+    if (targetId === "dashboard") {
+      if (typeof renderDashboardDampakRingkas === "function") renderDashboardDampakRingkas();
+    }
     if (targetId === "kasir" && typeof initHalamanPenjualan === "function") {
       initHalamanPenjualan();
     }
@@ -36,6 +100,8 @@ function pindahHalaman(targetId) {
     }
     if (targetId === "produk") {
       loadInventarisDariServer();
+      if (typeof renderTabelMasterProduk === "function") renderTabelMasterProduk();
+      if (typeof terapkanHakAksesRoleStokBatch === "function") terapkanHakAksesRoleStokBatch();
     }
     if (targetId === "analitik-ai" && typeof initHalamanAnalitikAI === "function") {
       initHalamanAnalitikAI();
@@ -53,7 +119,8 @@ function pindahHalaman(targetId) {
 
   // Perbarui status kelas active pada menu navigasi
   navLinks.forEach((nav) => {
-    if (nav.getAttribute("href") === "#" + targetId) {
+    const navTarget = nav.getAttribute("data-target") || (nav.getAttribute("href") ? nav.getAttribute("href").replace(/^#/, "") : "");
+    if (navTarget === targetId) {
       nav.classList.add("active");
     } else {
       nav.classList.remove("active");
@@ -73,10 +140,18 @@ document.addEventListener("DOMContentLoaded", function () {
   const navLinks = document.querySelectorAll(".nav-menu a");
 
   navLinks.forEach((link) => {
-    link.addEventListener("click", function (e) {
-      e.preventDefault();
-      const targetId = this.getAttribute("href").substring(1);
-      pindahHalaman(targetId);
+    const handleNav = function (e) {
+      if (e) e.preventDefault();
+      const targetId = this.getAttribute("data-target") || (this.getAttribute("href") ? this.getAttribute("href").replace(/^#/, "") : "");
+      if (targetId) {
+        pindahHalaman(targetId);
+      }
+    };
+    link.addEventListener("click", handleNav);
+    link.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        handleNav.call(this, e);
+      }
     });
   });
 
@@ -91,6 +166,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // Hitung metrik ringkasan dashboard awal dari inventaris
   if (typeof updateDashboardSummary === "function") {
     updateDashboardSummary();
+  }
+
+  // Sinkronisasi status koneksi dan data dari FastAPI backend
+  if (typeof cekKoneksiBackend === "function") {
+    cekKoneksiBackend();
+  }
+  if (typeof syncDampakPanganDariBackend === "function") {
+    syncDampakPanganDariBackend();
   }
 
   // Tampilkan tanggal hari ini di top floating bar
@@ -146,9 +229,11 @@ document.addEventListener("DOMContentLoaded", function () {
   
   // Database Produk Master Kasir & Penjualan
   const productDatabase = {
-    "899123456789": { name: "Susu UHT 1L", price: 18000, category: "Minuman & Dairy" },
-    "899999900001": { name: "Roti Tawar Daging", price: 12500, category: "Snack & Kue" },
-    "899888800002": { name: "Yogurt Stroberi", price: 9500, category: "Minuman & Dairy" }
+    "899123456789": { name: "Susu UHT 1L", price: 18000, buyPrice: 15000, category: "Minuman & Dairy" },
+    "899999900001": { name: "Roti Tawar Daging", price: 12500, buyPrice: 10000, category: "Snack & Kue" },
+    "899888800002": { name: "Yogurt Stroberi", price: 9500, buyPrice: 7500, category: "Minuman & Dairy" },
+    "899777700003": { name: "Tahu Sumedang", price: 6000, buyPrice: 4500, category: "Makanan Fresh" },
+    "899666600004": { name: "Tempe Bacem", price: 7500, buyPrice: 5500, category: "Makanan Fresh" }
   };
 
   // State Keranjang Belanja Penjualan
@@ -563,6 +648,14 @@ document.addEventListener("DOMContentLoaded", function () {
           const dipotong = Math.min(stokSaatIni, sisaKebutuhan);
           b.stock = stokSaatIni - dipotong;
           sisaKebutuhan -= dipotong;
+
+          // Jika stok batch habis akibat penjualan normal, tandai status final TERJUAL
+          if (b.stock <= 0) {
+            b.stock = 0;
+            b.status = "TERJUAL";
+            b.is_final = true;
+          }
+
           ringkasanBatchTerpotong.push({
             produk: item.nama,
             code: b.code,
@@ -570,6 +663,40 @@ document.addEventListener("DOMContentLoaded", function () {
             qtyAlokasi: dipotong,
             sisaBatch: b.stock
           });
+
+          // Catat penjualan normal ke tabel dampak_pangan (Terselamatkan)
+          const nilaiJual = Math.round(dipotong * (item.harga || 0));
+          const tglStr = new Date().toISOString().slice(0, 10);
+          const nowIso = new Date().toISOString();
+          const recordKasir = {
+            id: `DP-KASIR-${Date.now()}-${b.code}`,
+            batch_id: b.code,
+            produk: item.nama,
+            qty_kg: dipotong,
+            nilai_rupiah: nilaiJual,
+            tipe: "TERSELAMATKAN",
+            aksi: "TERJUAL",
+            tanggal: tglStr,
+            waktu: nowIso,
+            user_id: userAktifNama
+          };
+          if (typeof simpanDampakPanganRecord === "function") {
+            simpanDampakPanganRecord(recordKasir);
+          }
+          try {
+            fetch(`${FRESHLOG_API_BASE}/dampak-pangan/penjualan-normal`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                batch_id: b.code,
+                produk: item.nama,
+                qty_kg: dipotong,
+                nilai_rupiah: nilaiJual,
+                sisa_stok: b.stock,
+                user_id: userAktifNama
+              })
+            }).catch(() => {});
+          } catch (eKasirSync) {}
         });
       }
     });
@@ -578,6 +705,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof dataBatchDemo !== "undefined") {
       localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo));
     }
+
+    // Perbarui metrik dashboard dampak dan laporan
+    if (typeof renderDashboardDampakRingkas === "function") renderDashboardDampakRingkas();
+    if (typeof terapkanFilterLaporan === "function") terapkanFilterLaporan();
 
     // 2. Buat ID Faktur & Record Penjualan
     const tglNow = new Date();
@@ -1626,12 +1757,12 @@ document.addEventListener("DOMContentLoaded", function () {
     // 2. MODE: PEMILIHAN PRODUK PADA FORM PEMBELIAN (BARANG MASUK)
     if (modeScannerKamera === "pembelian") {
       if (found) {
-        const selectProd = document.getElementById("pilih-produk-pembelian");
-        if (selectProd) {
-          selectProd.value = found.nama;
+        const inputProd = document.getElementById("input-produk-pembelian") || document.getElementById("pilih-produk-pembelian");
+        if (inputProd) {
+          inputProd.value = found.nama;
           isiOtomatisHargaBeliProduk();
         }
-        alert(`✅ Barcode "${kode}" terdeteksi sebagai "${found.nama}". Produk telah dipilih otomatis pada Form Pembelian.`);
+        alert(`✅ Barcode "${kode}" terdeteksi sebagai "${found.nama}". Produk telah dimasukkan ke Form Pembelian.`);
       } else {
         const konfirmasi = confirm(`Kode Barcode "${kode}" berhasil dipindai oleh kamera, namun belum terdaftar di database produk.\n\nApakah Anda ingin mendaftarkan produk ini ke Master Produk sekarang?`);
         if (konfirmasi) {
@@ -1786,7 +1917,60 @@ document.addEventListener("DOMContentLoaded", function () {
     return `BTC-${ym}-${rand}`;
   }
 
+  function generateNomorPembelianOtomatis() {
+    const now = new Date();
+    const ym = now.toISOString().slice(0, 10).replace(/-/g, "");
+    const riwayat = (typeof getRiwayatPembelianData === "function") ? getRiwayatPembelianData() : [];
+    const prefix = `PO-${ym}-`;
+    const todayPOs = riwayat.filter(r => r.id && String(r.id).startsWith(prefix));
+    let nextNum = todayPOs.length + 1;
+    let candidate = `${prefix}${String(nextNum).padStart(3, "0")}`;
+    while (riwayat.some(r => r.id === candidate)) {
+      nextNum++;
+      candidate = `${prefix}${String(nextNum).padStart(3, "0")}`;
+    }
+    return candidate;
+  }
+
+  window.regenerateNomorPembelianOtomatis = function() {
+    const inputNo = document.getElementById("input-nomor-pembelian");
+    if (inputNo) {
+      inputNo.value = generateNomorPembelianOtomatis();
+    }
+  };
+
+  window.periksaPemasokTerpilih = function() {
+    const inputSup = document.getElementById("pilih-pemasok-pembelian");
+    const statusBox = document.getElementById("status-pemasok-beli");
+    if (!inputSup || !statusBox) return;
+
+    const val = inputSup.value.trim();
+    if (!val) {
+      statusBox.innerHTML = "";
+      return;
+    }
+
+    const listPemasok = (typeof getDataPemasokList === "function") ? getDataPemasokList() : [];
+    const supMatch = listPemasok.find(s => s.nama && s.nama.toLowerCase() === val.toLowerCase());
+
+    if (supMatch) {
+      statusBox.innerHTML = `<span style="color:#166534; display:inline-flex; align-items:center; gap:4px;"><svg style="width:13px; height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Mitra Terdaftar (${supMatch.kategori || "Umum"} • Kontak: ${supMatch.telp || "-"})</span>`;
+    } else {
+      statusBox.innerHTML = `<span style="color:#0369a1; display:inline-flex; align-items:center; gap:4px;">➕ Pemasok Baru (akan otomatis didaftarkan ke Mitra Pemasok saat disimpan)</span>`;
+    }
+  };
+
   function initHalamanPembelian() {
+    const inputNo = document.getElementById("input-nomor-pembelian");
+    if (inputNo && !inputNo.value) {
+      inputNo.value = generateNomorPembelianOtomatis();
+    }
+
+    const inputTglSampai = document.getElementById("input-tgl-sampai-toko");
+    if (inputTglSampai && !inputTglSampai.value) {
+      inputTglSampai.value = new Date().toISOString().slice(0, 10);
+    }
+
     renderPilihanFormPembelian();
     renderKeranjangPembelian();
     renderRiwayatPembelian();
@@ -1835,13 +2019,21 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderPilihanFormPembelian() {
+    const listPemasokDatalist = document.getElementById("list-pemasok-pembelian");
     const selectPemasok = document.getElementById("pilih-pemasok-pembelian");
     const filterPemasok = document.getElementById("filter-beli-pemasok");
+    const listProdukDatalist = document.getElementById("list-produk-pembelian");
     const selectProduk = document.getElementById("pilih-produk-pembelian");
     const filterProduk = document.getElementById("filter-beli-produk");
 
     const listPemasok = kumpulkanDaftarPemasokPembelian();
-    if (selectPemasok) {
+
+    // Datalist untuk Nama Supplier (input ketik/pilih)
+    if (listPemasokDatalist) {
+      listPemasokDatalist.innerHTML = listPemasok.map(s => `<option value="${s}"></option>`).join("");
+    }
+
+    if (selectPemasok && selectPemasok.tagName === "SELECT") {
       const currentVal = selectPemasok.value;
       selectPemasok.innerHTML = `<option value="">-- Pilih Pemasok --</option>` +
         listPemasok.map(s => `<option value="${s}">${s}</option>`).join("");
@@ -1879,7 +2071,16 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    if (selectProduk) {
+    // Datalist untuk Produk yang Diketik
+    if (listProdukDatalist) {
+      let dHtml = "";
+      mapProduk.forEach(p => {
+        dHtml += `<option value="${p.nama}">[${p.kategori}] Est. Harga Beli: Rp ${p.hargaBeli.toLocaleString("id-ID")}</option>`;
+      });
+      listProdukDatalist.innerHTML = dHtml;
+    }
+
+    if (selectProduk && selectProduk.tagName === "SELECT") {
       let html = `<option value="">-- Pilih Produk --</option>`;
       mapProduk.forEach(p => {
         html += `<option value="${p.nama}" data-harga-beli="${p.hargaBeli}" data-kategori="${p.kategori}">${p.nama} (Est. Harga Beli: Rp ${p.hargaBeli.toLocaleString("id-ID")})</option>`;
@@ -1896,18 +2097,59 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function isiOtomatisHargaBeliProduk() {
+  window.isiOtomatisHargaBeliProduk = function() {
+    const inputProduk = document.getElementById("input-produk-pembelian");
     const selectProduk = document.getElementById("pilih-produk-pembelian");
     const inputHarga = document.getElementById("input-harga-beli-pembelian");
-    if (!selectProduk || !inputHarga) return;
+    const statusBox = document.getElementById("status-produk-beli");
 
-    const opt = selectProduk.options[selectProduk.selectedIndex];
-    const harga = opt ? parseInt(opt.getAttribute("data-harga-beli")) : 0;
-    if (harga > 0) {
-      inputHarga.value = harga;
+    const namaKetik = (inputProduk ? inputProduk.value : (selectProduk ? selectProduk.value : "")).trim();
+    if (!namaKetik) {
+      if (statusBox) statusBox.innerHTML = "";
+      hitungPratinjauSubtotalBeli();
+      return;
     }
+
+    let matchProd = null;
+    for (const [sku, detail] of Object.entries(productDatabase)) {
+      if (detail && detail.name && detail.name.toLowerCase() === namaKetik.toLowerCase()) {
+        const hargaJual = detail.price || 15000;
+        const hargaBeli = detail.buyPrice || Math.round((hargaJual * 0.78) / 100) * 100;
+        matchProd = {
+          nama: detail.name,
+          hargaBeli: hargaBeli,
+          kategori: detail.category || "Makanan Fresh"
+        };
+        break;
+      }
+    }
+
+    if (!matchProd && typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo)) {
+      const bMatch = dataBatchDemo.find(b => b.name && b.name.toLowerCase() === namaKetik.toLowerCase());
+      if (bMatch) {
+        matchProd = {
+          nama: bMatch.name,
+          hargaBeli: 12000,
+          kategori: bMatch.category || "Makanan Fresh"
+        };
+      }
+    }
+
+    if (matchProd) {
+      if (inputHarga) {
+        inputHarga.value = matchProd.hargaBeli;
+      }
+      if (statusBox) {
+        statusBox.innerHTML = `<span style="color:#166534; display:inline-flex; align-items:center; gap:4px;"><svg style="width:13px; height:13px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Produk terdaftar (${matchProd.kategori} • Estimasi Beli: Rp ${matchProd.hargaBeli.toLocaleString("id-ID")})</span>`;
+      }
+    } else {
+      if (statusBox) {
+        statusBox.innerHTML = `<span style="color:#0369a1; display:inline-flex; align-items:center; gap:4px;">➕ Produk baru (akan otomatis didaftarkan ke Master Produk saat disimpan)</span>`;
+      }
+    }
+
     hitungPratinjauSubtotalBeli();
-  }
+  };
 
   function hitungPratinjauSubtotalBeli() {
     const qty = parseInt(document.getElementById("input-qty-pembelian")?.value) || 0;
@@ -1919,19 +2161,34 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function tambahItemKeDaftarPembelian() {
+    const noPo = document.getElementById("input-nomor-pembelian")?.value.trim();
     const pemasok = document.getElementById("pilih-pemasok-pembelian")?.value.trim();
-    const namaProduk = document.getElementById("pilih-produk-pembelian")?.value.trim();
+    const tglSampai = document.getElementById("input-tgl-sampai-toko")?.value;
+    const inputProdEl = document.getElementById("input-produk-pembelian") || document.getElementById("pilih-produk-pembelian");
+    const namaProduk = inputProdEl?.value.trim();
     const qty = parseInt(document.getElementById("input-qty-pembelian")?.value) || 0;
     const hargaBeli = parseFloat(document.getElementById("input-harga-beli-pembelian")?.value) || 0;
     const expiryDate = document.getElementById("input-exp-pembelian")?.value;
     let kodeBatch = document.getElementById("input-kode-batch-pembelian")?.value.trim();
 
+    if (!noPo) {
+      alert("Silakan isi Nomor Pembelian terlebih dahulu!");
+      document.getElementById("input-nomor-pembelian")?.focus();
+      return;
+    }
     if (!pemasok) {
-      alert("Silakan pilih Pemasok terlebih dahulu!");
+      alert("Silakan isi atau pilih Nama Supplier terlebih dahulu!");
+      document.getElementById("pilih-pemasok-pembelian")?.focus();
+      return;
+    }
+    if (!tglSampai) {
+      alert("Silakan tentukan Tanggal Barang Sampai ke Toko!");
+      document.getElementById("input-tgl-sampai-toko")?.focus();
       return;
     }
     if (!namaProduk) {
-      alert("Silakan pilih Produk yang dibeli!");
+      alert("Silakan ketik atau pilih Produk yang masuk!");
+      inputProdEl?.focus();
       return;
     }
     if (qty <= 0) {
@@ -1959,8 +2216,15 @@ document.addEventListener("DOMContentLoaded", function () {
       kodeBatch
     });
 
+    // Reset input produk agar siap mengetik produk berikutnya
+    if (inputProdEl) inputProdEl.value = "";
+    const statusBox = document.getElementById("status-produk-beli");
+    if (statusBox) statusBox.innerHTML = "";
+    const inputHarga = document.getElementById("input-harga-beli-pembelian");
+    if (inputHarga) inputHarga.value = "";
     const inputKode = document.getElementById("input-kode-batch-pembelian");
     if (inputKode) inputKode.value = generateKodeBatchOtomatis();
+    hitungPratinjauSubtotalBeli();
   }
 
   function tambahItemKeDaftarPembelianInternal(itemObj) {
@@ -2043,15 +2307,37 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    const totalPembelian = keranjangPembelian.reduce((s, i) => s + i.subtotal, 0);
-    const pemasokUtama = keranjangPembelian[0].pemasok || document.getElementById("pilih-pemasok-pembelian")?.value || "PT Distribusi Makanan Utama";
+    const nomorPO = document.getElementById("input-nomor-pembelian")?.value.trim() || generateNomorPembelianOtomatis();
+    const pemasokUtama = document.getElementById("pilih-pemasok-pembelian")?.value.trim() || keranjangPembelian[0].pemasok || "PT Distribusi Makanan Utama";
+    const tglSampai = document.getElementById("input-tgl-sampai-toko")?.value || new Date().toISOString().slice(0, 10);
     const referensi = document.getElementById("input-no-referensi-beli")?.value.trim() || "-";
     const statusBayar = document.getElementById("pilih-status-bayar-beli")?.value || "Lunas";
+    const totalPembelian = keranjangPembelian.reduce((s, i) => s + i.subtotal, 0);
 
-    const konfirmasi = confirm(`Simpan transaksi pembelian dari "${pemasokUtama}" senilai Rp ${totalPembelian.toLocaleString("id-ID")}?\nStok batch baru akan otomatis ditambahkan ke inventaris.`);
+    const konfirmasi = confirm(`Simpan transaksi pembelian "${nomorPO}" dari supplier "${pemasokUtama}" (Barang sampai: ${tglSampai}) senilai Rp ${totalPembelian.toLocaleString("id-ID")}?\nStok batch baru akan otomatis ditambahkan ke inventaris.`);
     if (!konfirmasi) return;
 
-    // 1. Tambahkan masing-masing item ke dataBatchDemo (Stok & Batch)
+    // 1. PENCAMPURAN PEMASOK: Daftarkan otomatis pemasok ke Master Pemasok jika nama supplier baru
+    if (typeof getDataPemasokList === "function" && typeof simpanDataPemasokList === "function") {
+      const listPemasok = getDataPemasokList();
+      const sudahAda = listPemasok.some(s => (s.nama || "").toLowerCase() === pemasokUtama.toLowerCase());
+      if (!sudahAda) {
+        const nextNum = listPemasok.length + 1;
+        const autoId = `SUP-${String(nextNum).padStart(3, "0")}`;
+        listPemasok.push({
+          id: autoId,
+          nama: pemasokUtama,
+          kategori: "Distributor Bahan Segar",
+          telp: "-",
+          alamat: "Tercatat otomatis dari Transaksi Pembelian"
+        });
+        simpanDataPemasokList(listPemasok);
+        if (typeof renderTabelPemasok === "function") renderTabelPemasok();
+        if (typeof renderDropdownRiwayatPemasok === "function") renderDropdownRiwayatPemasok();
+      }
+    }
+
+    // 2. Tambahkan masing-masing item ke dataBatchDemo (Stok & Batch) & registrasi produk baru jika belum terdaftar
     keranjangPembelian.forEach(item => {
       let kategoriProduk = "Makanan Fresh";
       let ditemukanMaster = false;
@@ -2096,16 +2382,14 @@ document.addEventListener("DOMContentLoaded", function () {
       localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo));
     }
 
-    // 2. Simpan Riwayat Pembelian (PO)
+    // 3. Simpan Riwayat Pembelian (PO) dengan nomor pembelian & tanggal sampai ke toko
     const tglNow = new Date();
-    const compactDate = tglNow.toISOString().slice(0, 10).replace(/-/g, "");
-    const randomNo = Math.floor(100 + Math.random() * 900);
-    const poId = `PO-${compactDate}-${randomNo}`;
     const petugasNama = (typeof userAktif !== "undefined" && userAktif && userAktif.nama) ? userAktif.nama : "Admin Toko";
 
     const recordBaru = {
-      id: poId,
+      id: nomorPO,
       waktu: tglNow.toISOString(),
+      tglSampai: tglSampai,
       pemasok: pemasokUtama,
       referensi: referensi,
       statusBayar: statusBayar,
@@ -2118,29 +2402,42 @@ document.addEventListener("DOMContentLoaded", function () {
     riwayat.unshift(recordBaru);
     simpanRiwayatPembelianData(riwayat);
 
-    // 3. Catat ke Audit Log
+    // 4. Catat ke Audit Log
     if (typeof catatLogAktivitas === "function") {
       catatLogAktivitas(
         "Pembelian Barang Masuk",
-        `Transaksi ${poId} dari "${pemasokUtama}": ${keranjangPembelian.length} batch masuk senilai Rp ${totalPembelian.toLocaleString("id-ID")}.`,
+        `Transaksi ${nomorPO} dari "${pemasokUtama}" (Sampai: ${tglSampai}): ${keranjangPembelian.length} batch masuk senilai Rp ${totalPembelian.toLocaleString("id-ID")}.`,
         "Inventaris"
       );
     }
 
-    // 4. Reset Keranjang & Form
+    // 5. Reset Keranjang & Form
     keranjangPembelian = [];
     const inputRef = document.getElementById("input-no-referensi-beli");
     if (inputRef) inputRef.value = "";
+    const inputSup = document.getElementById("pilih-pemasok-pembelian");
+    if (inputSup) inputSup.value = "";
+    const statusSup = document.getElementById("status-pemasok-beli");
+    if (statusSup) statusSup.innerHTML = "";
+    const inputProd = document.getElementById("input-produk-pembelian");
+    if (inputProd) inputProd.value = "";
+    const statusProd = document.getElementById("status-produk-beli");
+    if (statusProd) statusProd.innerHTML = "";
+
+    // Generate nomor pembelian baru otomatis untuk transaksi selanjutnya
+    const inputNo = document.getElementById("input-nomor-pembelian");
+    if (inputNo) inputNo.value = generateNomorPembelianOtomatis();
+
     renderKeranjangPembelian();
     renderPilihanFormPembelian();
     if (typeof renderPilihanProdukPenjualan === "function") renderPilihanProdukPenjualan();
 
-    // 5. Refresh tampilan Inventaris
+    // 6. Refresh tampilan Inventaris
     if (typeof renderTabelInventaris === "function") renderTabelInventaris();
     if (typeof updateRingkasanInventaris === "function") updateRingkasanInventaris();
     if (typeof hitungAnalitikDampak === "function") hitungAnalitikDampak();
 
-    // 6. Tampilkan Detail Bukti Pembelian
+    // 7. Tampilkan Detail Bukti Pembelian
     tampilkanDetailPembelian(recordBaru.id);
   }
 
@@ -2156,13 +2453,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const keyword = document.getElementById("filter-beli-cari")?.value.toLowerCase().trim() || "";
 
     const hasilFilter = riwayat.filter(r => {
+      const tglBanding = r.tglSampai || (r.waktu ? new Date(r.waktu).toISOString().slice(0, 10) : "");
       if (tglMulai) {
-        const tglRec = new Date(r.waktu).toISOString().slice(0, 10);
-        if (tglRec < tglMulai) return false;
+        if (tglBanding < tglMulai) return false;
       }
       if (tglAkhir) {
-        const tglRec = new Date(r.waktu).toISOString().slice(0, 10);
-        if (tglRec > tglAkhir) return false;
+        if (tglBanding > tglAkhir) return false;
       }
       if (pemasokFilter && r.pemasok !== pemasokFilter) {
         return false;
@@ -2172,7 +2468,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!adaProduk) return false;
       }
       if (keyword) {
-        const matchId = r.id.toLowerCase().includes(keyword);
+        const matchId = String(r.id || "").toLowerCase().includes(keyword);
         const matchSup = (r.pemasok || "").toLowerCase().includes(keyword);
         const matchRef = (r.referensi || "").toLowerCase().includes(keyword);
         const matchItem = r.items && r.items.some(i =>
@@ -2193,13 +2489,25 @@ document.addEventListener("DOMContentLoaded", function () {
     hasilFilter.forEach(r => {
       const d = new Date(r.waktu);
       const waktuStr = isNaN(d.getTime()) ? r.waktu : `${d.toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" })} ${d.toLocaleTimeString("id-ID", { hour:"2-digit", minute:"2-digit" })}`;
+      
+      let tglSampaiStr = "-";
+      if (r.tglSampai) {
+        const ds = new Date(r.tglSampai);
+        tglSampaiStr = isNaN(ds.getTime()) ? r.tglSampai : ds.toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+      } else {
+        tglSampaiStr = isNaN(d.getTime()) ? "-" : d.toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+      }
+
       const produkRingkas = r.items.map(i => `${i.nama} (${i.qty} pcs)`).join(", ");
       const batchPills = r.items.map(i => `<span style="display:inline-block; background:#e0f2fe; color:#0369a1; font-size:0.75rem; padding:2px 6px; border-radius:6px; margin:2px;">${i.kodeBatch} (Exp: ${i.expiryDate})</span>`).join(" ");
 
       html += `
         <tr>
           <td><strong style="color:var(--emerald-primary);">${r.id}</strong></td>
-          <td><small>${waktuStr}</small></td>
+          <td>
+            <strong style="color:var(--ink-primary);">${tglSampaiStr}</strong>
+            <small style="color:var(--ink-secondary); display:block; font-size:0.75rem;">Dicatat: ${waktuStr}</small>
+          </td>
           <td><strong>${r.pemasok}</strong></td>
           <td>${produkRingkas}</td>
           <td>${batchPills}</td>
@@ -2242,10 +2550,21 @@ document.addEventListener("DOMContentLoaded", function () {
     const waktuEl = document.getElementById("modal-pembelian-waktu");
     const bodyEl = document.getElementById("modal-detail-pembelian-body");
 
+    let tglSampaiFormat = record.tglSampai;
+    if (record.tglSampai) {
+      const ds = new Date(record.tglSampai);
+      if (!isNaN(ds.getTime())) {
+        tglSampaiFormat = ds.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+      }
+    } else {
+      const d = new Date(record.waktu);
+      tglSampaiFormat = isNaN(d.getTime()) ? "-" : d.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" });
+    }
+
     if (titleEl) titleEl.innerText = `Detail Pembelian: ${record.id}`;
     if (waktuEl) {
       const d = new Date(record.waktu);
-      waktuEl.innerText = isNaN(d.getTime()) ? record.waktu : `Tanggal Penerimaan: ${d.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" })} - ${d.toLocaleTimeString("id-ID")} | Petugas: ${record.petugas || "Admin Toko"}`;
+      waktuEl.innerText = isNaN(d.getTime()) ? record.waktu : `Tanggal Pencatatan Sistem: ${d.toLocaleDateString("id-ID", { day:"numeric", month:"long", year:"numeric" })} - ${d.toLocaleTimeString("id-ID")} | Petugas: ${record.petugas || "Admin Toko"}`;
     }
 
     if (bodyEl) {
@@ -2267,11 +2586,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
       bodyEl.innerHTML = `
         <div style="background:var(--bg-nested-subtle); padding:12px 16px; border-radius:12px; margin-bottom:16px; font-size:0.88rem;">
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-            <span style="color:var(--ink-secondary);">Pemasok (Supplier):</span>
+          <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span style="color:var(--ink-secondary);">Nomor Pembelian:</span>
+            <strong style="color:var(--emerald-primary);">${record.id}</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span style="color:var(--ink-secondary);">Nama Supplier (Pemasok):</span>
             <strong>${record.pemasok}</strong>
           </div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span style="color:var(--ink-secondary);">Tanggal Barang Sampai ke Toko:</span>
+            <strong style="color:#0369a1;">${tglSampaiFormat}</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
             <span style="color:var(--ink-secondary);">No. Surat Jalan / Referensi:</span>
             <span>${record.referensi || "-"}</span>
           </div>
@@ -2313,10 +2640,11 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    let csv = "No. Pembelian,Tanggal & Waktu,Pemasok,No. Referensi,Status Bayar,Petugas,Total Pembelian (Rp),Detail Item & Batch\n";
+    let csv = "No. Pembelian,Tanggal Sampai Toko,Tanggal & Waktu Catat,Nama Supplier,No. Referensi,Status Bayar,Petugas,Total Pembelian (Rp),Detail Item & Batch\n";
     riwayat.forEach(r => {
       const itemsStr = r.items.map(i => `${i.nama} [${i.kodeBatch}, Exp:${i.expiryDate}, Qty:${i.qty}, @Rp${i.hargaBeli}]`).join("; ");
-      csv += `"${r.id}","${r.waktu}","${r.pemasok}","${r.referensi || "-"}","${r.statusBayar || "Lunas"}","${r.petugas || "Admin Toko"}",${r.total},"${itemsStr}"\n`;
+      const tglSampaiStr = r.tglSampai || (r.waktu ? r.waktu.slice(0, 10) : "-");
+      csv += `"${r.id}","${tglSampaiStr}","${r.waktu}","${r.pemasok}","${r.referensi || "-"}","${r.statusBayar || "Lunas"}","${r.petugas || "Admin Toko"}",${r.total},"${itemsStr}"\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -2624,7 +2952,7 @@ async function fetchRisikoBatch(batch) {
   };
 
   const endpoints = [
-    "http://127.0.0.1:8000/risiko",
+    `${FRESHLOG_API_BASE}/risiko`,
     "https://inventori-api-production.up.railway.app/risiko"
   ];
 
@@ -2692,6 +3020,10 @@ function renderTabelInventaris(hasilRisiko = null) {
     tr.setAttribute("data-is-exp", isMendekatiExp ? "1" : "0");
     tr.setAttribute("data-is-tinggi", isBerisikoTinggi ? "1" : "0");
 
+    // Saran tindakan cerdas berbasis Google Gemini LLM API
+    const rawSaran = (window.rekomendasiBatchLLMMap && window.rekomendasiBatchLLMMap[batch.code]) || risiko.saran_tindakan;
+    const saranGemini = typeof bersihkanEmojiTeks === "function" ? bersihkanEmojiTeks(rawSaran) : (rawSaran || "-");
+
     tr.innerHTML = `
       <td><strong>${batch.code}</strong></td>
       <td>${batch.name}</td>
@@ -2703,12 +3035,15 @@ function renderTabelInventaris(hasilRisiko = null) {
         </span>
       </td>
       <td>
-        <select class="form-select" style="max-width:280px; padding:6px 10px; font-size:0.82rem; border:1px solid #E8ECEA; border-radius:8px;">
-          <option>${risiko.saran_tindakan}</option>
-        </select>
+        <span style="font-size: 0.83rem; color: var(--ink-secondary); line-height: 1.45; display: inline-block; max-width: 320px;">
+          ${saranGemini}
+        </span>
       </td>
       <td>
-        <button type="button" class="btn btn-sm btn-delete" onclick="hapusBatchInventaris('${batch.code}')" ${isStaff ? "hidden" : ""}>Hapus</button>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn btn-sm btn-secondary" onclick="bukaModalUbahBatch('${batch.code}')">Ubah</button>
+          <button type="button" class="btn btn-sm btn-delete" onclick="hapusBatchInventaris('${batch.code}')">Hapus</button>
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
@@ -2944,6 +3279,259 @@ function perbaruiProfilSidebar(akun) {
   if (elAvatar) {
     elAvatar.src = getAvatarUrl(akun.nama, akun.foto);
   }
+  if (typeof terapkanHakAksesRoleStokBatch === "function") {
+    terapkanHakAksesRoleStokBatch(akun.role);
+  }
+  if (typeof terapkanHakAksesRoleMenu === "function") {
+    terapkanHakAksesRoleMenu(akun.role);
+  }
+}
+
+// ==========================================
+// SISTEM KEAMANAN & PROTEKSI BRUTE FORCE (15 MENIT)
+// ==========================================
+const BRUTE_FORCE_STORAGE_KEY = 'freshlog_brute_force_tracker';
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 Menit = 900.000 ms
+let lockoutTimerInterval = null;
+let memoryBruteForceTracker = null; // Cadangan memori agar tracking tidak pernah reset jika storage diblokir
+
+function dapatkanTrackerBruteForce() {
+  if (memoryBruteForceTracker && typeof memoryBruteForceTracker === 'object') {
+    return memoryBruteForceTracker;
+  }
+  try {
+    const raw = localStorage.getItem(BRUTE_FORCE_STORAGE_KEY);
+    memoryBruteForceTracker = raw ? JSON.parse(raw) : {};
+    return memoryBruteForceTracker;
+  } catch (e) {
+    if (!memoryBruteForceTracker) memoryBruteForceTracker = {};
+    return memoryBruteForceTracker;
+  }
+}
+
+function simpanTrackerBruteForce(tracker) {
+  memoryBruteForceTracker = tracker;
+  try {
+    localStorage.setItem(BRUTE_FORCE_STORAGE_KEY, JSON.stringify(tracker));
+  } catch (e) {
+    console.warn("Penyimpanan localStorage gagal, menggunakan in-memory fallback:", e);
+  }
+}
+
+function periksaStatusLockout(username) {
+  const tracker = dapatkanTrackerBruteForce();
+  const userKey = (username || tracker.__last_user__ || 'default').toLowerCase();
+  const now = Date.now();
+
+  const infoUser = tracker[userKey] || {};
+  const infoGlobal = tracker.__global__ || {};
+
+  const lockUser = infoUser.lockoutUntil || 0;
+  const lockGlobal = infoGlobal.lockoutUntil || 0;
+  const activeLockoutUntil = Math.max(lockUser, lockGlobal);
+
+  const attemptsUser = infoUser.attempts || 0;
+  const attemptsGlobal = infoGlobal.attempts || 0;
+  const effectiveAttempts = Math.max(attemptsUser, attemptsGlobal);
+
+  if (activeLockoutUntil > now) {
+    const sisaDetik = Math.ceil((activeLockoutUntil - now) / 1000);
+    return {
+      terkunci: true,
+      sisaDetik: sisaDetik,
+      attempts: effectiveAttempts || MAX_FAILED_LOGIN_ATTEMPTS
+    };
+  } else {
+    // Masa 15 menit sudah berakhir, reset otomatis
+    let updated = false;
+    if (lockUser > 0 && lockUser <= now) {
+      delete infoUser.lockoutUntil;
+      infoUser.attempts = 0;
+      tracker[userKey] = infoUser;
+      updated = true;
+    }
+    if (lockGlobal > 0 && lockGlobal <= now) {
+      delete infoGlobal.lockoutUntil;
+      infoGlobal.attempts = 0;
+      tracker.__global__ = infoGlobal;
+      updated = true;
+    }
+    if (updated) {
+      simpanTrackerBruteForce(tracker);
+    }
+    return {
+      terkunci: false,
+      sisaDetik: 0,
+      attempts: Math.max(infoUser.attempts || 0, infoGlobal.attempts || 0)
+    };
+  }
+}
+
+function formatWaktuMenitDetik(totalDetik) {
+  const m = Math.floor(totalDetik / 60);
+  const s = totalDetik % 60;
+  const mm = m < 10 ? '0' + m : m;
+  const ss = s < 10 ? '0' + s : s;
+  return `${mm}:${ss}`;
+}
+
+function mulaiHitungMundurLockout(username, totalDetikAwal) {
+  if (lockoutTimerInterval) {
+    clearInterval(lockoutTimerInterval);
+    lockoutTimerInterval = null;
+  }
+
+  const userField = document.getElementById('username');
+  const passField = document.getElementById('password');
+  const roleField = document.getElementById('role');
+  const btnSubmit = document.getElementById('btn-submit-login');
+  const errorBox = document.getElementById('errorBox');
+
+  // Kunci semua kontrol input login
+  if (userField) userField.disabled = true;
+  if (passField) passField.disabled = true;
+  if (roleField) roleField.disabled = true;
+  if (btnSubmit) {
+    btnSubmit.disabled = true;
+    btnSubmit.innerText = "🔒 Akses Terkunci (15 Menit)";
+    btnSubmit.style.opacity = "0.6";
+    btnSubmit.style.cursor = "not-allowed";
+  }
+
+  function renderCard(detik) {
+    if (!errorBox) return;
+    errorBox.style.display = 'block';
+    errorBox.style.borderColor = '#fca5a5';
+    errorBox.style.backgroundColor = '#fef2f2';
+    errorBox.style.color = '#991b1b';
+    errorBox.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; color: #b91c1c; font-size: 0.95rem;">
+          <span style="font-size: 1.25rem;">🛡️</span>
+          <span>Sistem Keamanan Aktif: Akun Terkunci</span>
+        </div>
+        <div style="font-size: 0.83rem; color: #4b5563; line-height: 1.45;">
+          Terlalu banyak percobaan login gagal berturut-turut (5 kali). Sistem membekukan akses login sementara selama <strong>15 menit</strong> demi mencegah serangan Brute-Force.
+        </div>
+        <div style="margin-top: 4px; padding: 10px 14px; background: #ffffff; border: 1.5px solid #f87171; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.08);">
+          <span style="font-size: 0.82rem; font-weight: 600; color: #7f1d1d;">⏱️ Hitung Mundur Buka Kunci:</span>
+          <span id="lockout-timer-display" style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: #dc2626; letter-spacing: 1.5px;">${formatWaktuMenitDetik(detik)}</span>
+        </div>
+        <div style="font-size: 0.78rem; color: #6b7280; font-style: italic;">
+          Silakan tunggu hingga hitung mundur selesai sebelum mencoba login kembali.
+        </div>
+      </div>
+    `;
+  }
+
+  renderCard(totalDetikAwal);
+
+  lockoutTimerInterval = setInterval(() => {
+    const status = periksaStatusLockout(username);
+    if (!status.terkunci || status.sisaDetik <= 0) {
+      clearInterval(lockoutTimerInterval);
+      lockoutTimerInterval = null;
+
+      // Buka kembali form
+      if (userField) userField.disabled = false;
+      if (passField) passField.disabled = false;
+      if (roleField) roleField.disabled = false;
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = "Masuk ke Sistem";
+        btnSubmit.style.opacity = "";
+        btnSubmit.style.cursor = "";
+      }
+
+      if (errorBox) {
+        errorBox.style.display = 'block';
+        errorBox.style.borderColor = '#86efac';
+        errorBox.style.backgroundColor = '#f0fdf4';
+        errorBox.style.color = '#166534';
+        errorBox.innerHTML = `✅ <strong>Selesai:</strong> Masa tunggu 15 menit telah berakhir. Anda dapat mencoba login kembali sekarang.`;
+      }
+      return;
+    }
+
+    const timerDisplay = document.getElementById('lockout-timer-display');
+    if (timerDisplay) {
+      timerDisplay.innerText = formatWaktuMenitDetik(status.sisaDetik);
+    } else {
+      renderCard(status.sisaDetik);
+    }
+  }, 1000);
+}
+
+function catatGagalLogin(username) {
+  const tracker = dapatkanTrackerBruteForce();
+  const userKey = (username || 'default').toLowerCase();
+  tracker.__last_user__ = userKey;
+  const now = Date.now();
+
+  if (!tracker[userKey]) {
+    tracker[userKey] = { attempts: 0, lastAttempt: now };
+  }
+  if (!tracker.__global__) {
+    tracker.__global__ = { attempts: 0, lastAttempt: now };
+  }
+
+  // Jika percobaan gagal sebelumnya sudah lewat 15 menit, reset hitungan
+  if (tracker[userKey].lastAttempt && (now - tracker[userKey].lastAttempt > LOCKOUT_DURATION_MS)) {
+    tracker[userKey].attempts = 0;
+  }
+  if (tracker.__global__.lastAttempt && (now - tracker.__global__.lastAttempt > LOCKOUT_DURATION_MS)) {
+    tracker.__global__.attempts = 0;
+  }
+
+  tracker[userKey].attempts = (tracker[userKey].attempts || 0) + 1;
+  tracker[userKey].lastAttempt = now;
+
+  tracker.__global__.attempts = (tracker.__global__.attempts || 0) + 1;
+  tracker.__global__.lastAttempt = now;
+
+  // Akumulasikan percobaan: baik per akun maupun per sesi perangkat tidak akan me-reset
+  const effectiveAttempts = Math.max(tracker[userKey].attempts, tracker.__global__.attempts);
+
+  if (effectiveAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+    const lockUntil = now + LOCKOUT_DURATION_MS;
+    tracker[userKey].lockoutUntil = lockUntil;
+    tracker.__global__.lockoutUntil = lockUntil;
+    simpanTrackerBruteForce(tracker);
+    mulaiHitungMundurLockout(userKey, Math.ceil(LOCKOUT_DURATION_MS / 1000));
+    return {
+      terkunci: true,
+      attempts: effectiveAttempts,
+      sisaDetik: Math.ceil(LOCKOUT_DURATION_MS / 1000)
+    };
+  } else {
+    simpanTrackerBruteForce(tracker);
+    return {
+      terkunci: false,
+      attempts: effectiveAttempts,
+      sisaKesempatan: Math.max(0, MAX_FAILED_LOGIN_ATTEMPTS - effectiveAttempts)
+    };
+  }
+}
+
+function resetStatusBruteForce(username) {
+  const tracker = dapatkanTrackerBruteForce();
+  const userKey = (username || 'default').toLowerCase();
+  if (tracker[userKey]) {
+    delete tracker[userKey];
+  }
+  if (tracker.__global__) {
+    delete tracker.__global__;
+  }
+  if (tracker.__last_user__ === userKey) {
+    delete tracker.__last_user__;
+  }
+  simpanTrackerBruteForce(tracker);
+
+  if (lockoutTimerInterval) {
+    clearInterval(lockoutTimerInterval);
+    lockoutTimerInterval = null;
+  }
 }
 
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -2955,6 +3543,13 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   const errorBox = document.getElementById('errorBox');
   const btnSubmit = document.getElementById('btn-submit-login') || this.querySelector('button[type="submit"]');
 
+  // Cek apakah akun/perangkat sedang terkunci brute-force 15 menit
+  const statusAwal = periksaStatusLockout(inputUser);
+  if (statusAwal.terkunci) {
+    mulaiHitungMundurLockout(inputUser, statusAwal.sisaDetik);
+    return;
+  }
+
   if (btnSubmit) {
     btnSubmit.disabled = true;
     btnSubmit.innerText = "Memverifikasi...";
@@ -2964,9 +3559,9 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     let authBerhasil = false;
     let dataPengguna = null;
 
-    // 1. Coba verifikasi dengan sistem keamanan backend (beckend/security.py)
+    // 1. Coba verifikasi dengan sistem keamanan backend FastAPI (beckend/security.py)
     try {
-      const response = await fetch("http://localhost:8000/login", {
+      const response = await fetch(`${FRESHLOG_API_BASE}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: inputUser, password: inputPass, role: inputRole })
@@ -2975,9 +3570,16 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
       const resData = await response.json();
 
       if (response.status === 429) {
-        // Proteksi Brute-Force aktif dari security.py!
-        errorBox.innerHTML = `🛡️ <strong>Keamanan:</strong> ${resData.detail}`;
-        errorBox.style.display = 'block';
+        // Proteksi Brute-Force aktif dari backend!
+        const tracker = dapatkanTrackerBruteForce();
+        tracker.__last_user__ = inputUser;
+        tracker[inputUser] = {
+          attempts: MAX_FAILED_LOGIN_ATTEMPTS,
+          lastAttempt: Date.now(),
+          lockoutUntil: Date.now() + LOCKOUT_DURATION_MS
+        };
+        simpanTrackerBruteForce(tracker);
+        mulaiHitungMundurLockout(inputUser, Math.ceil(LOCKOUT_DURATION_MS / 1000));
         return;
       }
 
@@ -2985,6 +3587,10 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
         authBerhasil = true;
         dataPengguna = resData.user;
       } else if (response.status === 401 || response.status === 403 || response.status === 400) {
+        const resGagal = catatGagalLogin(inputUser);
+        if (resGagal.terkunci) {
+          return;
+        }
         errorBox.innerHTML = `❌ ${resData.detail || "Kredensial tidak valid."}`;
         errorBox.style.display = 'block';
         return;
@@ -3000,13 +3606,18 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
       if (akun && akun.password === inputPass && (!inputRole || akun.role === inputRole)) {
         authBerhasil = true;
       } else {
-        errorBox.innerHTML = `❌ Akses ditolak! Periksa kembali Username, Kata Sandi, dan Hak Akses Anda.`;
+        const resGagal = catatGagalLogin(inputUser);
+        if (resGagal.terkunci) {
+          return;
+        }
+        errorBox.innerHTML = `❌ <strong>Akses ditolak:</strong> Kredensial tidak valid. Percobaan salah ke-<strong>${resGagal.attempts}</strong> dari 5 (Sisa ${resGagal.sisaKesempatan} kesempatan sebelum akun diblokir 15 menit).`;
         errorBox.style.display = 'block';
         return;
       }
     }
 
-    // 3. Login sukses -> Masuk ke dashboard SPA
+    // 3. Login sukses -> Reset pelacak brute-force & Masuk ke dashboard SPA
+    resetStatusBruteForce(inputUser);
     errorBox.style.display = 'none';
     activeUserKey = inputUser;
     localStorage.setItem("freshlog_active_user", activeUserKey);
@@ -3053,9 +3664,13 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     }
 
   } finally {
-    if (btnSubmit) {
+    // Jangan buka tombol jika sedang dalam masa lockout 15 menit
+    const statusAkhir = periksaStatusLockout(inputUser);
+    if (!statusAkhir.terkunci && btnSubmit) {
       btnSubmit.disabled = false;
       btnSubmit.innerText = "Masuk ke Sistem";
+      btnSubmit.style.opacity = "";
+      btnSubmit.style.cursor = "";
     }
   }
 });
@@ -3171,8 +3786,9 @@ function renderTabelPemasok() {
         </td>
         <td>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-sm btn-primary" onclick="buatPembelianDariPemasok('${safeNama}')" title="Buat Transaksi Pembelian untuk Pemasok Ini">+ Pembelian</button>
             <button type="button" class="btn btn-sm btn-secondary" onclick="bukaModalUbahPemasok('${safeId}')">Ubah</button>
-            <button type="button" class="btn btn-sm btn-primary" onclick="lihatRiwayatPembelianPemasok('${safeNama}')">Riwayat Pembelian</button>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="lihatRiwayatPembelianPemasok('${safeNama}')">Riwayat</button>
             <button type="button" class="btn btn-sm btn-delete" onclick="hapusPemasokById('${safeId}')">Hapus</button>
           </div>
         </td>
@@ -3344,6 +3960,31 @@ function renderDropdownRiwayatPemasok() {
     select.value = currentVal;
   }
 }
+
+window.buatPembelianDariPemasok = function(namaPemasok) {
+  const akunAktifData = (typeof daftarAkun !== "undefined" && typeof activeUserKey !== "undefined") ? daftarAkun[activeUserKey] : null;
+  const userRoleEl = document.getElementById("user-role");
+  const currentRoleText = userRoleEl ? userRoleEl.innerText : "";
+  const currentRole = ((akunAktifData && akunAktifData.role) || currentRoleText || "").toLowerCase();
+  const isUserStaff = currentRole.includes("staf") || currentRole === "staff";
+  if (isUserStaff) {
+    if (typeof tampilkanToastModern === "function") {
+      tampilkanToastModern("Akses Ditolak: Role Staf tidak memiliki izin untuk transaksi Pembelian Barang Masuk.", "warning");
+    } else {
+      alert("Akses Ditolak: Role Staf tidak memiliki izin untuk transaksi Pembelian Barang Masuk.");
+    }
+    return;
+  }
+  if (typeof pindahHalaman === "function") pindahHalaman("pembelian");
+  if (typeof gantiTabPembelian === "function") gantiTabPembelian("baru");
+  const inputSup = document.getElementById("pilih-pemasok-pembelian");
+  if (inputSup) {
+    inputSup.value = namaPemasok;
+    if (typeof periksaPemasokTerpilih === "function") periksaPemasokTerpilih();
+  }
+  const inputProd = document.getElementById("input-produk-pembelian");
+  if (inputProd) inputProd.focus();
+};
 
 function lihatRiwayatPembelianPemasok(namaPemasok) {
   gantiTabPemasok("riwayat");
@@ -3738,23 +4379,75 @@ function formatTglIndo(tglStr) {
   return `${parseInt(parts[2])} ${blnNames[parseInt(parts[1])] || parts[1]} ${parts[0]}`;
 }
 
-// Sub-fitur: Update Dashboard Dampak (detail: kg & rupiah terselamatkan per periode)
+// Sub-fitur: Update Kartu Dampak Pangan (1 Kartu: Terselamatkan kg & Rp, Tidak Terselamatkan kg & Rp)
 function updateDampakLaporan(periodeText, totalQtyJual, totalOmzet, totalQtyBeli) {
   const elKg = document.getElementById("dampak-laporan-kg");
   const elRp = document.getElementById("dampak-laporan-rp");
+  const elGagalKg = document.getElementById("dampak-laporan-gagal-kg");
+  const elGagalRp = document.getElementById("dampak-laporan-gagal-rp");
   const elPeriode = document.getElementById("dampak-laporan-periode");
   const elUnit = document.getElementById("dampak-laporan-unit");
   const elEfisiensi = document.getElementById("dampak-laporan-efisiensi");
   const elCo2 = document.getElementById("dampak-laporan-co2");
 
-  // Kalkulasi dampak penyelamatan pangan berbasis rotasi FEFO:
-  // - Estimasi 70% dari volume penjualan berputar tepat waktu menyelamatkan produk fresh dari kedaluwarsa.
-  // - Bobot standar rata-rata 0,35 kg per unit item fresh.
-  // - Pencegahan emisi jejak karbon rata-rata 2,5 kg CO2e per kg limbah pangan yang terhindar (FAO/UNEP standard).
-  const unitSelamat = Math.round(totalQtyJual * 0.70);
-  const kgSelamat = (unitSelamat * 0.35).toFixed(1);
-  const rpSelamat = Math.round(totalOmzet * 0.70);
+  // Ambil data catatan dampak_pangan (single source of truth)
+  const allDampak = (typeof getDampakPanganList === "function") ? getDampakPanganList() : [];
+  const prodFilter = document.getElementById("laporan-filter-produk")?.value || "all";
 
+  // Filter records dampak pangan sesuai filter periode dan produk saat ini
+  const dampakFiltered = allDampak.filter(r => {
+    if (!r.tanggal) return false;
+    if (prodFilter !== "all" && r.produk !== prodFilter) return false;
+
+    if (modeLaporanAktif === "harian") {
+      const tglMulai = document.getElementById("laporan-tgl-mulai")?.value;
+      const tglAkhir = document.getElementById("laporan-tgl-akhir")?.value;
+      if (tglMulai && r.tanggal < tglMulai) return false;
+      if (tglAkhir && r.tanggal > tglAkhir) return false;
+      return true;
+    } else if (modeLaporanAktif === "bulanan") {
+      const pBulan = document.getElementById("laporan-pilih-bulan")?.value;
+      const pTahun = document.getElementById("laporan-pilih-tahun")?.value;
+      const parts = r.tanggal.split("-");
+      if (pTahun && parts[0] !== pTahun) return false;
+      if (pBulan && pBulan !== "all" && String(parseInt(parts[1], 10)) !== String(parseInt(pBulan, 10))) return false;
+      return true;
+    } else if (modeLaporanAktif === "tahunan") {
+      const pTahunTahunan = document.getElementById("laporan-pilih-tahun-tahunan")?.value;
+      const parts = r.tanggal.split("-");
+      if (pTahunTahunan && pTahunTahunan !== "all" && parts[0] !== pTahunTahunan) return false;
+      return true;
+    }
+    return true;
+  });
+
+  let kgSelamatDampak = 0;
+  let rpSelamatDampak = 0;
+  let kgGagalDampak = 0;
+  let rpGagalDampak = 0;
+
+  dampakFiltered.forEach(r => {
+    const kg = parseFloat(r.qty_kg) || 0;
+    const rp = parseInt(r.nilai_rupiah) || 0;
+    if (r.tipe === "TERSELAMATKAN") {
+      kgSelamatDampak += kg;
+      rpSelamatDampak += rp;
+    } else if (r.tipe === "TIDAK_TERSELAMATKAN") {
+      kgGagalDampak += kg;
+      rpGagalDampak += rp;
+    }
+  });
+
+  // Jika di filter tanggal ini belum ada aksi akhir spesifik, gabungkan dengan kalkulasi FEFO penjualan
+  let kgSelamatFinal = kgSelamatDampak;
+  let rpSelamatFinal = rpSelamatDampak;
+  if (kgSelamatFinal === 0 && totalQtyJual > 0) {
+    const unitSelamat = Math.round(totalQtyJual * 0.70);
+    kgSelamatFinal = (unitSelamat * 0.35);
+    rpSelamatFinal = Math.round(totalOmzet * 0.70);
+  }
+
+  const unitSelamat = Math.round(kgSelamatFinal / 0.35);
   let rasioEfisiensi = 0;
   if (totalQtyJual + totalQtyBeli > 0) {
     rasioEfisiensi = Math.min(98.5, Math.max(68.0, (totalQtyJual / (totalQtyJual + (totalQtyBeli * 0.45))) * 100)).toFixed(1);
@@ -3762,10 +4455,13 @@ function updateDampakLaporan(periodeText, totalQtyJual, totalOmzet, totalQtyBeli
     rasioEfisiensi = "0.0";
   }
 
-  const co2Selamat = (parseFloat(kgSelamat) * 2.5).toFixed(1);
+  const co2Selamat = (kgSelamatFinal * 2.5).toFixed(1);
 
-  if (elKg) elKg.innerText = parseFloat(kgSelamat).toLocaleString("id-ID");
-  if (elRp) elRp.innerText = rpSelamat.toLocaleString("id-ID");
+  if (elKg) elKg.innerText = parseFloat(kgSelamatFinal).toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (elRp) elRp.innerText = rpSelamatFinal.toLocaleString("id-ID");
+  if (elGagalKg) elGagalKg.innerText = parseFloat(kgGagalDampak).toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (elGagalRp) elGagalRp.innerText = rpGagalDampak.toLocaleString("id-ID");
+
   if (elPeriode) elPeriode.innerText = `📅 Periode: ${periodeText}`;
   if (elUnit) elUnit.innerText = `${unitSelamat.toLocaleString("id-ID")} Unit`;
   if (elEfisiensi) elEfisiensi.innerText = `${rasioEfisiensi}%`;
@@ -4481,22 +5177,212 @@ function initHalamanLaporan() {
   populasiFilterLaporan();
   terapkanFilterLaporan();
 }
-/* ========================================== */
-/* SIMPAN PRODUK MASTER & BATCH (KATEGORI->PRODUK) */
-/* ========================================== */
+/* ============================================================ */
+/* SUB-FITUR MASTER PRODUK & BATCH (KATEGORI -> PRODUK & HARGA) */
+/* ============================================================ */
 
-// Pastikan data awal productDatabase memiliki kategori
+// Pastikan data awal productDatabase memiliki kategori dan harga beli
 if (!productDatabase["899123456789"].category) {
-  productDatabase["899123456789"] = { name: "Susu UHT 1L", price: 18000, category: "Minuman & Dairy" };
-  productDatabase["899999900001"] = { name: "Roti Tawar Daging", price: 12500, category: "Snack & Kue" };
-  productDatabase["899888800002"] = { name: "Yogurt Stroberi", price: 9500, category: "Minuman & Dairy" };
+  productDatabase["899123456789"] = { name: "Susu UHT 1L", price: 18000, buyPrice: 15000, category: "Minuman & Dairy" };
+  productDatabase["899999900001"] = { name: "Roti Tawar Daging", price: 12500, buyPrice: 10000, category: "Snack & Kue" };
+  productDatabase["899888800002"] = { name: "Yogurt Stroberi", price: 9500, buyPrice: 7500, category: "Minuman & Dairy" };
+  productDatabase["899777700003"] = { name: "Tahu Sumedang", price: 6000, buyPrice: 4500, category: "Makanan Fresh" };
+  productDatabase["899666600004"] = { name: "Tempe Bacem", price: 7500, buyPrice: 5500, category: "Makanan Fresh" };
 }
 
-// Muat data produk tersimpan dari browser (agar tidak hilang saat refresh)
+// Muat data produk tersimpan dari browser
 const savedProducts = JSON.parse(localStorage.getItem("freshlog_products"));
-if (savedProducts) {Object.assign(productDatabase, savedProducts);}
+if (savedProducts) { Object.assign(productDatabase, savedProducts); }
 
-// 1. Proses Simpan Produk Master Baru (Modal 1)
+// 1. Sub-Tab Switcher: Stok & Batch vs Master Produk
+function gantiTabStokBatch(tab) {
+  const btnBatch = document.getElementById("tab-btn-stok-batch");
+  const btnMaster = document.getElementById("tab-btn-stok-master");
+  const panelBatch = document.getElementById("panel-stok-batch");
+  const panelMaster = document.getElementById("panel-stok-master");
+
+  if (tab === "batch") {
+    if (btnBatch) btnBatch.classList.add("active");
+    if (btnMaster) btnMaster.classList.remove("active");
+    if (panelBatch) panelBatch.style.display = "block";
+    if (panelMaster) panelMaster.style.display = "none";
+  } else {
+    if (btnMaster) btnMaster.classList.add("active");
+    if (btnBatch) btnBatch.classList.remove("active");
+    if (panelMaster) panelMaster.style.display = "block";
+    if (panelBatch) panelBatch.style.display = "none";
+    renderTabelMasterProduk();
+  }
+}
+
+// 2. Render Tabel Subfitur Master Produk & Harga (Dapat dilihat oleh Admin & Staf)
+function renderTabelMasterProduk() {
+  const tbody = document.getElementById("table-master-produk");
+  if (!tbody) return;
+
+  const selectKat = document.getElementById("filter-kategori-master-produk");
+  if (selectKat && selectKat.options.length <= 1) {
+    const cats = new Set();
+    Object.values(productDatabase).forEach(p => { if (p.category) cats.add(p.category); });
+    selectKat.innerHTML = '<option value="">Semua Kategori</option>' + 
+      Array.from(cats).map(c => `<option value="${c}">${c}</option>`).join("");
+  }
+
+  const kataKunci = (document.getElementById("filter-search-master-produk")?.value || "").toLowerCase().trim();
+  const filterKat = (document.getElementById("filter-kategori-master-produk")?.value || "").toLowerCase().trim();
+
+  const items = [];
+  for (const [sku, detail] of Object.entries(productDatabase)) {
+    if (!detail || !detail.name) continue;
+    const nama = detail.name;
+    const kat = detail.category || "Umum";
+    const hargaBeli = parseInt(detail.buyPrice) || Math.round(((detail.price || 15000) * 0.78) / 100) * 100;
+    const hargaJual = parseInt(detail.price) || 0;
+
+    if (kataKunci && !nama.toLowerCase().includes(kataKunci) && !sku.toLowerCase().includes(kataKunci)) {
+      continue;
+    }
+    if (filterKat && kat.toLowerCase() !== filterKat) {
+      continue;
+    }
+
+    items.push({ sku, nama, kat, hargaBeli, hargaJual });
+  }
+
+  if (items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 24px; color: var(--ink-muted);">Belum ada produk master yang sesuai dengan filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(p => `
+    <tr>
+      <td><code style="background:#F1F5F9; padding:2px 8px; border-radius:6px; font-weight:700; color:#334155;">${p.sku}</code></td>
+      <td><strong>${p.nama}</strong></td>
+      <td><span class="status-badge" style="background:#F1F5F9; color:#475569; font-weight:600;">${p.kat}</span></td>
+      <td><strong style="color: #0F172A;">Rp ${p.hargaBeli.toLocaleString("id-ID")}</strong></td>
+      <td><strong style="color: var(--emerald-primary, #137A4B);">Rp ${p.hargaJual.toLocaleString("id-ID")}</strong></td>
+      <td>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" class="btn btn-sm btn-secondary" onclick="bukaModalUbahProdukMaster('${p.sku}')">Ubah</button>
+          <button type="button" class="btn btn-sm btn-delete" onclick="hapusProdukMaster('${p.sku}')">Hapus</button>
+        </div>
+      </td>
+    </tr>
+  `).join("");
+}
+
+function filterTabelMasterProduk() {
+  renderTabelMasterProduk();
+}
+
+// 3. Hak Akses Role: Admin hanya Produk Master, Staf hanya Tambah Batch
+function terapkanHakAksesRoleStokBatch(role) {
+  const userRoleEl = document.getElementById("user-role");
+  const currentRoleText = userRoleEl ? userRoleEl.innerText : "";
+  const roleCheck = (role || currentRoleText || "").toLowerCase();
+  const isStaff = roleCheck.includes("staf") || roleCheck === "staff";
+
+  const btnProdukMaster = document.getElementById("btn-tambah-produk-master");
+  const btnTambahBatch = document.getElementById("btn-tambah-batch");
+  const subfiturTambahMaster = document.getElementById("subfitur-btn-tambah-master");
+
+  // Pada role admin, HANYA ADA produk master saja
+  // Pada role staff, HANYA ADA tambah batch saja
+  if (btnProdukMaster) {
+    btnProdukMaster.style.display = isStaff ? "none" : "inline-flex";
+  }
+  if (btnTambahBatch) {
+    btnTambahBatch.style.display = isStaff ? "inline-flex" : "none";
+  }
+  if (subfiturTambahMaster) {
+    subfiturTambahMaster.style.display = isStaff ? "none" : "block";
+  }
+}
+
+// 3B. Hak Akses Role Menu Navigasi: Sembunyikan Pembelian (Barang Masuk) untuk Staf
+function terapkanHakAksesRoleMenu(role) {
+  const userRoleEl = document.getElementById("user-role");
+  const currentRoleText = userRoleEl ? userRoleEl.innerText : "";
+  const akunAktifData = (typeof daftarAkun !== "undefined" && typeof activeUserKey !== "undefined") ? daftarAkun[activeUserKey] : null;
+  const roleCheck = (role || (akunAktifData && akunAktifData.role) || currentRoleText || "").toLowerCase();
+  const isStaff = roleCheck.includes("staf") || roleCheck === "staff";
+
+  // 1. Sembunyikan menu Pembelian (Barang Masuk) di sidebar untuk role staff
+  const navItemPembelian = document.getElementById("nav-item-pembelian") || 
+    (typeof document !== "undefined" && document.querySelector('.nav-menu a[data-target="pembelian"]')?.closest('li'));
+  if (navItemPembelian) {
+    navItemPembelian.style.display = isStaff ? "none" : "";
+  }
+
+  // 2. Jika saat ini sedang aktif di section pembelian namun role saat ini adalah staf, segera alihkan ke dashboard
+  const secPembelian = document.getElementById("pembelian");
+  if (isStaff && secPembelian && secPembelian.style.display !== "none") {
+    secPembelian.style.display = "none";
+    if (typeof pindahHalaman === "function") {
+      pindahHalaman("dashboard");
+    }
+  }
+}
+
+// 4. Modal Tambah & Ubah Produk Master
+function bukaModalTambahProdukMaster() {
+  const titleEl = document.getElementById("modal-produk-title");
+  if (titleEl) titleEl.innerText = "Tambah Produk Master Baru";
+  const inSkuLama = document.getElementById("prod-sku-lama");
+  if (inSkuLama) inSkuLama.value = "";
+
+  const form = document.getElementById("form-produk");
+  if (form) form.reset();
+
+  const btnSubmit = document.getElementById("btn-submit-produk");
+  if (btnSubmit) btnSubmit.innerText = "Simpan Produk";
+
+  openModal("modal-produk");
+}
+
+function bukaModalUbahProdukMaster(sku) {
+  const prod = productDatabase[sku];
+  if (!prod) return;
+
+  const titleEl = document.getElementById("modal-produk-title");
+  if (titleEl) titleEl.innerText = "Ubah Produk Master";
+  const inSkuLama = document.getElementById("prod-sku-lama");
+  if (inSkuLama) inSkuLama.value = sku;
+
+  const inNama = document.getElementById("prod-nama");
+  const inSku = document.getElementById("prod-sku");
+  const inKat = document.getElementById("prod-kategori");
+  const inBeli = document.getElementById("prod-harga-beli");
+  const inJual = document.getElementById("prod-harga-jual");
+  const btnSubmit = document.getElementById("btn-submit-produk");
+
+  if (inNama) inNama.value = prod.name || "";
+  if (inSku) inSku.value = sku;
+  if (inKat) inKat.value = prod.category || "Makanan Fresh";
+  if (inBeli) inBeli.value = prod.buyPrice || Math.round(((prod.price || 15000) * 0.78) / 100) * 100;
+  if (inJual) inJual.value = prod.price || 0;
+  if (btnSubmit) btnSubmit.innerText = "Perbarui Produk";
+
+  openModal("modal-produk");
+}
+
+function hapusProdukMaster(sku) {
+  const prod = productDatabase[sku];
+  if (!prod) return;
+  if (confirm(`Yakin ingin menghapus produk master "${prod.name}" (SKU: ${sku})?`)) {
+    delete productDatabase[sku];
+    localStorage.setItem("freshlog_products", JSON.stringify(productDatabase));
+    if (typeof catatLogAktivitas === "function") {
+      catatLogAktivitas("Hapus Produk Master", `Menghapus produk master "${prod.name}" (SKU: ${sku})`, "Produk Master");
+    }
+    renderTabelMasterProduk();
+    if (typeof sinkronisasiDropdownKategori === "function") sinkronisasiDropdownKategori();
+    if (typeof renderPilihanProdukPenjualan === "function") renderPilihanProdukPenjualan();
+    alert(`Produk master "${prod.name}" berhasil dihapus.`);
+  }
+}
+
+// Event Listener Submit Produk Master (Simpan & Perbarui)
 const formProduk = document.getElementById("form-produk");
 if (formProduk) {
   formProduk.addEventListener("submit", function (e) {
@@ -4504,23 +5390,48 @@ if (formProduk) {
 
     const nama = document.getElementById("prod-nama").value.trim();
     const sku = document.getElementById("prod-sku").value.trim();
+    const skuLama = document.getElementById("prod-sku-lama")?.value.trim() || "";
     const kategori = document.getElementById("prod-kategori").value;
+    const hargaBeli = parseInt(document.getElementById("prod-harga-beli").value) || 0;
     const hargaJual = parseInt(document.getElementById("prod-harga-jual").value) || 0;
 
-    // Simpan produk baru beserta kategorinya
-    productDatabase[sku] = { name: nama, price: hargaJual, category: kategori };
-    localStorage.setItem("freshlog_products", JSON.stringify(productDatabase));
-    if (typeof catatLogAktivitas === "function") {
-      catatLogAktivitas("Tambah Produk Master", `Menambahkan produk "${nama}" (SKU: ${sku}, Kategori: ${kategori})`, "Produk Master");
+    if (!nama || !sku) {
+      alert("Nama produk dan SKU wajib diisi!");
+      return;
     }
 
-    alert(`Produk "${nama}" berhasil disimpan ke kategori ${kategori}!`);
+    // Jika sedang mengubah SKU, hapus key SKU lama
+    if (skuLama && skuLama !== sku) {
+      delete productDatabase[skuLama];
+    }
+
+    // Simpan otomatis ke sistem master (nama produk, kategori, harga beli, harga jual)
+    productDatabase[sku] = {
+      name: nama,
+      category: kategori,
+      buyPrice: hargaBeli,
+      price: hargaJual
+    };
+    localStorage.setItem("freshlog_products", JSON.stringify(productDatabase));
+
+    const aksi = skuLama ? "Ubah Produk Master" : "Tambah Produk Master";
+    if (typeof catatLogAktivitas === "function") {
+      catatLogAktivitas(aksi, `${aksi}: "${nama}" (SKU: ${sku}, Beli: Rp ${hargaBeli.toLocaleString("id-ID")}, Jual: Rp ${hargaJual.toLocaleString("id-ID")}, Kategori: ${kategori})`, "Produk Master");
+    }
+
+    alert(`Produk "${nama}" berhasil disimpan ke sistem Master Produk!`);
     formProduk.reset();
     closeModal("modal-produk");
+
+    // Sinkronisasi otomatis ke seluruh subfitur dan modul
+    renderTabelMasterProduk();
+    if (typeof sinkronisasiDropdownKategori === "function") sinkronisasiDropdownKategori();
+    if (typeof renderPilihanProdukPenjualan === "function") renderPilihanProdukPenjualan();
+    if (typeof loadInventarisDariServer === "function") loadInventarisDariServer();
   });
 }
 
-// 2. Fungsi Menyaring Produk Saat Kategori Dipilih (Modal 2)
+// 5. Fungsi Menyaring Produk Saat Kategori Dipilih (Modal Batch)
 function filterProdukByKategori() {
   const kategoriDipilih = document.getElementById("batch-kategori").value;
   const selectProduk = document.getElementById("select-produk-master");
@@ -4546,12 +5457,86 @@ function filterProdukByKategori() {
   }
 }
 
-// 3. Proses Simpan Batch Baru ke Tabel (Modal 2)
+// 6. Modal Tambah & Ubah Batch Inventaris
+function bukaModalTambahBatch() {
+  const titleEl = document.getElementById("modal-batch-title");
+  if (titleEl) titleEl.innerText = "Tambah Batch Baru (Stok Masuk)";
+  const inKodeLama = document.getElementById("batch-kode-lama");
+  if (inKodeLama) inKodeLama.value = "";
+
+  const form = document.getElementById("form-batch");
+  if (form) form.reset();
+
+  const inKode = document.getElementById("batch-kode");
+  if (inKode) {
+    inKode.value = (typeof generateKodeBatchOtomatis === "function") ? generateKodeBatchOtomatis() : ("BTC-" + Math.floor(100 + Math.random() * 900));
+  }
+
+  const selProd = document.getElementById("select-produk-master");
+  if (selProd) {
+    selProd.disabled = true;
+    selProd.innerHTML = '<option value="" disabled selected>-- Pilih Kategori Dulu --</option>';
+  }
+
+  const btnSubmit = document.getElementById("btn-submit-batch");
+  if (btnSubmit) btnSubmit.innerText = "Simpan Batch";
+
+  openModal("modal-batch");
+}
+
+function bukaModalUbahBatch(kodeBatch) {
+  const b = dataBatchDemo.find(item => item.code === kodeBatch);
+  if (!b) return;
+
+  const titleEl = document.getElementById("modal-batch-title");
+  if (titleEl) titleEl.innerText = "Ubah Batch Inventaris";
+  const inKodeLama = document.getElementById("batch-kode-lama");
+  if (inKodeLama) inKodeLama.value = kodeBatch;
+
+  const inKat = document.getElementById("batch-kategori");
+  const selProd = document.getElementById("select-produk-master");
+  const inKode = document.getElementById("batch-kode");
+  const inJumlah = document.getElementById("batch-jumlah");
+  const inExp = document.getElementById("batch-exp");
+  const btnSubmit = document.getElementById("btn-submit-batch");
+
+  if (inKat) inKat.value = b.category || "Makanan Fresh";
+  filterProdukByKategori();
+
+  if (selProd) {
+    selProd.disabled = false;
+    let foundOption = false;
+    for (let i = 0; i < selProd.options.length; i++) {
+      if (selProd.options[i].text.toLowerCase() === b.name.toLowerCase()) {
+        selProd.selectedIndex = i;
+        foundOption = true;
+        break;
+      }
+    }
+    if (!foundOption) {
+      const opt = document.createElement("option");
+      opt.value = b.code;
+      opt.text = b.name;
+      opt.selected = true;
+      selProd.appendChild(opt);
+    }
+  }
+
+  if (inKode) inKode.value = b.code;
+  if (inJumlah) inJumlah.value = b.stock;
+  if (inExp) inExp.value = b.expiry_date;
+  if (btnSubmit) btnSubmit.innerText = "Perbarui Batch";
+
+  openModal("modal-batch");
+}
+
+// Event Listener Submit Batch (Tambah & Ubah)
 const formBatch = document.getElementById("form-batch");
 if (formBatch) {
   formBatch.addEventListener("submit", function (e) {
     e.preventDefault();
 
+    const kodeLama = document.getElementById("batch-kode-lama")?.value.trim() || "";
     const kategori = document.getElementById("batch-kategori").value;
     const selectProduk = document.getElementById("select-produk-master");
     const namaProduk = selectProduk.options[selectProduk.selectedIndex].text;
@@ -4559,23 +5544,38 @@ if (formBatch) {
     const jumlahMasuk = parseInt(document.getElementById("batch-jumlah").value) || 0;
     const tglExp = document.getElementById("batch-exp").value;
 
-    // Tambahkan ke daftar inventaris & simpan di browser
-    const batchBaru = {
-      code: kodeBatch,
-      name: namaProduk,
-      category: kategori,
-      stock: jumlahMasuk,
-      expiry_date: tglExp,
-      penjualan_14_hari: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
-    };
-    dataBatchDemo.push(batchBaru);
-    if (typeof syncBatchKeSupabase === "function") syncBatchKeSupabase(batchBaru);
-    localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo));
-    if (typeof catatLogAktivitas === "function") {
-      catatLogAktivitas("Tambah Batch Baru", `Menambahkan batch ${kodeBatch} (${namaProduk}, jumlah: ${jumlahMasuk}, exp: ${tglExp})`, "Inventaris");
+    if (kodeLama) {
+      // Mode Ubah Batch yang sudah ada
+      const idx = dataBatchDemo.findIndex(b => b.code === kodeLama);
+      if (idx !== -1) {
+        dataBatchDemo[idx].code = kodeBatch;
+        dataBatchDemo[idx].name = namaProduk;
+        dataBatchDemo[idx].category = kategori;
+        dataBatchDemo[idx].stock = jumlahMasuk;
+        dataBatchDemo[idx].expiry_date = tglExp;
+        if (typeof syncBatchKeSupabase === "function") syncBatchKeSupabase(dataBatchDemo[idx]);
+        if (typeof catatLogAktivitas === "function") {
+          catatLogAktivitas("Ubah Batch", `Memperbarui batch ${kodeBatch} (${namaProduk}, jumlah: ${jumlahMasuk}, exp: ${tglExp})`, "Inventaris");
+        }
+      }
+    } else {
+      // Mode Tambah Batch Baru
+      const batchBaru = {
+        code: kodeBatch,
+        name: namaProduk,
+        category: kategori,
+        stock: jumlahMasuk,
+        expiry_date: tglExp,
+        penjualan_14_hari: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5]
+      };
+      dataBatchDemo.push(batchBaru);
+      if (typeof syncBatchKeSupabase === "function") syncBatchKeSupabase(batchBaru);
+      if (typeof catatLogAktivitas === "function") {
+        catatLogAktivitas("Tambah Batch Baru", `Menambahkan batch ${kodeBatch} (${namaProduk}, jumlah: ${jumlahMasuk}, exp: ${tglExp})`, "Inventaris");
+      }
     }
 
-    // Reset form, tutup modal, dan langsung muat ulang tabel
+    localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo));
     formBatch.reset();
     selectProduk.disabled = true;
     closeModal("modal-batch");
@@ -4591,11 +5591,12 @@ function filterPemasok() {
 /* 5. KONEKSI SUPABASE (OPSIONAL SINKRONISASI)*/
 /* ========================================== */
 
-const SUPABASE_URL = "https://hogrejhcoctnzjbtemuj.supabase.co";
-const SUPABASE_KEY = "sb_publishable_BQZNmS6X4l8p2o9y8v8nEA_phPKoc9W";
+const SUPABASE_URL = localStorage.getItem("supabase_url") || "";
+const SUPABASE_KEY = localStorage.getItem("supabase_key") || "";
 
 // Sinkronisasi batch ke Supabase jika server tersedia
 async function syncBatchKeSupabase(batchItem) {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return;
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/batch`, {
       method: "POST",
@@ -4808,7 +5809,11 @@ let cacheAnalisisAIBatches = [];
 // Inisialisasi utama Halaman Analitik AI
 function initHalamanAnalitikAI() {
   loadSkorRisikoAI();
-  renderRekomendasiTindakanAI();
+  if (!window.rekomendasiLLMList || window.rekomendasiLLMList.length === 0) {
+    muatRekomendasiLLMGemini(false);
+  } else {
+    renderRekomendasiTindakanAI();
+  }
   hitungUlangRestockAI();
   loadRiwayatAkurasiAI();
 }
@@ -4830,7 +5835,13 @@ function gantiTabAI(tab) {
     }
   });
 
-  if (tab === "restock") {
+  if (tab === "rekomendasi") {
+    if (!window.rekomendasiLLMList || window.rekomendasiLLMList.length === 0) {
+      muatRekomendasiLLMGemini(false);
+    } else {
+      renderRekomendasiTindakanAI();
+    }
+  } else if (tab === "restock") {
     setTimeout(() => {
       if (chartPrediksiRestockInstance) chartPrediksiRestockInstance.resize();
       else updateGrafikProyeksiRestock();
@@ -4953,145 +5964,904 @@ function filterTabelRisikoAI() {
 }
 
 // -----------------------------------------------------------------------------
-// 2. SUB-FITUR: REKOMENDASI TINDAKAN (Diskon/Bundling/Pindah Cabang/Donasi)
+// 2. SUB-FITUR: REKOMENDASI TINDAKAN DARI GOOGLE GEMINI LLM API
 // -----------------------------------------------------------------------------
+window.rekomendasiBatchLLMMap = {};
+window.rekomendasiLLMList = [];
+let sedangMemuatRekomendasiLLM = false;
+
+// Kunci API Google Gemini (dapat dikonfigurasi via Pengaturan atau LocalStorage)
+function getGeminiApiKey() {
+  return localStorage.getItem("gemini_api_key") || "";
+}
+
+// Helper sanitasi teks dari emoji agar konsisten dengan desain modern SVG FreshLog
+function bersihkanEmojiTeks(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Inisialisasi cache rekomendasi LLM dari localStorage jika sudah ada
+try {
+  localStorage.removeItem("freshlog_rekomendasi_llm_cache_v2"); // bersihkan cache versi lama ber-emoji
+  const cachedAwal = localStorage.getItem("freshlog_rekomendasi_llm_cache_v3");
+  if (cachedAwal) {
+    const parsedAwal = JSON.parse(cachedAwal);
+    if (parsedAwal && Array.isArray(parsedAwal.rekomendasi_tindakan)) {
+      window.rekomendasiLLMList = parsedAwal.rekomendasi_tindakan;
+      window.rekomendasiBatchLLMMap = parsedAwal.saran_per_batch || {};
+    }
+  }
+} catch (eInitCache) {
+  console.warn("Gagal membaca cache awal rekomendasi LLM:", eInitCache);
+}
+
+// Fallback preskriptif cerdas 3 Kategori Resmi jika LLM API offline / kuota habis
+function generateRekomendasiFallbackPreskriptif() {
+  const rekomendasiList = [];
+  const saranBatch = {};
+
+  if (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo)) {
+    dataBatchDemo.forEach(batch => {
+      const risiko = hitungStatusRisikoLokal(batch);
+      const sisaStok = parseInt(batch.stock) || 0;
+      const sisaHari = risiko.sisa_hari;
+      const hargaJual = 18000;
+
+      // Kategori 3: Buang 0 hari / sudah kedaluwarsa
+      if (sisaHari <= 0 && sisaStok > 0) {
+        rekomendasiList.push({
+          id: `ACT-GEMINI-BUANG-${batch.code}`,
+          jenis: "buang",
+          namaTindakan: "Pemusnahan Limbah",
+          badgeWarna: "#991B1B",
+          badgeBg: "#FEE2E2",
+          badgeBorder: "#FECACA",
+          produk: batch.name,
+          batch: batch.code,
+          stok: sisaStok,
+          prioritas: "Tindakan Darurat",
+          alasan: `Produk telah mencapai 0 hari atau melewati tanggal kedaluwarsa. Demi keamanan pangan dan perlindungan konsumen, ${sisaStok} unit wajib segera dipisahkan dan dimusnahkan.`,
+          estimasi: `Pencatatan limbah ${sisaStok} unit untuk audit inventaris`,
+          tombolTeks: "Catat Pemusnahan"
+        });
+        saranBatch[batch.code] = "0 Hari (Kedaluwarsa): Segera pisahkan dan musnahkan dari stok aktif.";
+
+      // Kategori 2: Donasi limbah 3-1 hari sebelum kadaluarsa
+      } else if (sisaHari >= 1 && sisaHari <= 3 && sisaStok > 0) {
+        rekomendasiList.push({
+          id: `ACT-GEMINI-DONASI-${batch.code}`,
+          jenis: "donasi",
+          namaTindakan: "Donasi Limbah Pangan",
+          badgeWarna: "#9A3412",
+          badgeBg: "#FFEDD5",
+          badgeBorder: "#FED7AA",
+          produk: batch.name,
+          batch: batch.code,
+          stok: sisaStok,
+          prioritas: "Prioritas Tertinggi",
+          alasan: `Sisa ${sisaHari} hari sebelum kedaluwarsa (fase kritis 3-1 hari). Segera salurkan ${sisaStok} unit ke mitra donasi pangan sebelum kualitas menurun.`,
+          estimasi: `Penyelamatan ${sisaStok} unit pangan bernutrisi untuk program sosial`,
+          tombolTeks: "Salurkan Donasi"
+        });
+        saranBatch[batch.code] = `Sisa ${sisaHari} hari: Salurkan donasi limbah pangan ke mitra sebelum kedaluwarsa.`;
+
+      // Kategori 1: Diskon 1 minggu sebelum kadaluarsa (4-7 hari)
+      } else if (sisaHari >= 4 && sisaHari <= 7 && sisaStok > 0) {
+        const diskonPersen = sisaHari <= 5 ? 40 : 25;
+        rekomendasiList.push({
+          id: `ACT-GEMINI-DISKON-${batch.code}`,
+          jenis: "diskon",
+          namaTindakan: `Diskon Bertahap (${diskonPersen}% Off)`,
+          badgeWarna: "#92400E",
+          badgeBg: "#FEF3C7",
+          badgeBorder: "#FDE68A",
+          produk: batch.name,
+          batch: batch.code,
+          stok: sisaStok,
+          prioritas: "Prioritas Tinggi",
+          alasan: `Batch berada pada fase 1 minggu sebelum kedaluwarsa (sisa ${sisaHari} hari). Pemotongan harga ${diskonPersen}% dan penempatan FEFO di rak depan diaktifkan untuk menghabiskan ${sisaStok} unit.`,
+          estimasi: `Likuidasi omzet ${sisaStok} unit sebelum masuk fase donasi`,
+          tombolTeks: "Terapkan Diskon"
+        });
+        saranBatch[batch.code] = `Sisa ${sisaHari} hari: Terapkan diskon 1 minggu sebelum kedaluwarsa (rotasi FEFO).`;
+
+      } else {
+        if (sisaHari <= 0) {
+          saranBatch[batch.code] = "0 Hari (Kedaluwarsa): Segera pisahkan dan musnahkan dari stok aktif.";
+        } else if (sisaStok <= 0) {
+          saranBatch[batch.code] = "Stok habis. Tidak ada tindakan diperlukan.";
+        } else {
+          saranBatch[batch.code] = `Stok aman (sisa ${sisaHari} hari). Pertahankan rotasi standar FEFO.`;
+        }
+      }
+    });
+  }
+
+  window.rekomendasiLLMList = rekomendasiList;
+  window.rekomendasiBatchLLMMap = saranBatch;
+}
+
+// Fungsi utama mengambil rekomendasi dari Google Gemini LLM API (3 Kategori Resmi)
+async function muatRekomendasiLLMGemini(forceRefresh = false) {
+  if (sedangMemuatRekomendasiLLM) return;
+
+  const container = document.getElementById("container-kartu-rekomendasi");
+  const btnRefresh = document.getElementById("btn-refresh-rekomendasi-llm");
+
+  // Jika tidak dipaksa refresh dan sudah ada data di memori/cache, langsung gunakan
+  if (!forceRefresh && window.rekomendasiLLMList && window.rekomendasiLLMList.length > 0) {
+    renderRekomendasiTindakanAI();
+    return;
+  }
+
+  sedangMemuatRekomendasiLLM = true;
+  if (btnRefresh) {
+    btnRefresh.disabled = true;
+    btnRefresh.innerHTML = `
+      <svg class="modern-icon spin-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      <span>Menganalisis...</span>
+    `;
+  }
+
+  if (container) {
+    container.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 42px 20px; background: var(--bg-card-white, #FFFFFF); border-radius: 16px; border: 1px dashed var(--border-hairline, #E2E8F0);">
+        <div style="width: 44px; height: 44px; margin: 0 auto 12px; display: inline-flex; align-items: center; justify-content: center; background: #F1F5F9; border-radius: 50%; color: #475569;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <h3 style="margin: 0 0 6px; font-size: 1.05rem; color: var(--ink-charcoal); font-weight: 700;">Google Gemini API Sedang Menganalisis Inventaris...</h3>
+        <p style="margin: 0 auto; font-size: 0.84rem; color: var(--ink-secondary); max-width: 520px; line-height: 1.5;">
+          Menyusun saran preskriptif 3 kategori: <strong>Diskon (1 minggu sebelum exp)</strong>, <strong>Donasi Limbah (3–1 hari)</strong>, dan <strong>Pemusnahan (0 hari)</strong>.
+        </p>
+      </div>
+    `;
+  }
+
+  const batchesPayload = (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo))
+    ? dataBatchDemo.map(b => {
+        const r = hitungStatusRisikoLokal(b);
+        return {
+          code: b.code || "",
+          name: b.name || "",
+          category: b.category || "Umum",
+          stock: parseFloat(b.stock) || 0,
+          expiry_date: b.expiry_date || "",
+          sisa_hari: r.sisa_hari || 0,
+          skor_risiko: r.skor_risiko || 0,
+          status: r.status || "hijau"
+        };
+      })
+    : [];
+
+  let hasil = null;
+
+  // 1. Coba lewat endpoint backend FastAPI (/rekomendasi-ai)
+  try {
+    const res = await fetch(`${FRESHLOG_API_BASE}/rekomendasi-ai`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ batches: batchesPayload })
+    });
+    if (res.ok) {
+      hasil = await res.json();
+    }
+  } catch (errBackend) {
+    console.warn("Backend /rekomendasi-ai offline/timeout, mencoba langsung ke Google Gemini API...", errBackend);
+  }
+
+  // 2. Jika backend offline, panggil langsung Google Gemini API dari browser
+  if (!hasil || !hasil.rekomendasi_tindakan || hasil.rekomendasi_tindakan.length === 0) {
+    try {
+      const apiKey = getGeminiApiKey();
+      if (apiKey) {
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${apiKey}`;
+        const promptText = `Anda adalah asisten AI Analitik Ritel FreshLog (Sistem Inventaris FEFO & Manajemen Produk Segar).
+Tugas Anda adalah menganalisis data batch berikut dan menyusun Rekomendasi Tindakan Preskriptif Cerdas berbasis Google Gemini LLM.
+
+ATURAN WAJIB SISTEM - HANYA ADA 3 KATEGORI TINDAKAN RESMI:
+1. "diskon" : Diskon 1 minggu sebelum kedaluwarsa (sisa 4 sampai 7 hari sebelum exp)
+2. "donasi" : Donasi limbah pangan 3-1 hari sebelum kedaluwarsa (sisa 1 sampai 3 hari sebelum exp)
+3. "buang"  : Buang / Pemusnahan limbah (0 hari atau sisa <= 0 hari / sudah kedaluwarsa)
+
+Catatan: Produk dengan sisa hari > 7 hari adalah stok aman (tidak perlu kartu tindakan darurat).
+PENTING: Jangan gunakan emoji apa pun dalam output teks.
+
+Data Batch Inventaris:
+${JSON.stringify(batchesPayload, null, 2)}
+
+Keluarkan output HANYA berupa JSON murni (tanpa markdown \`\`\`json, tanpa komentar):
+{
+  "rekomendasi_tindakan": [
+    {
+      "id": "ACT-GEMINI-<kode_batch>",
+      "batch": "<kode_batch>",
+      "produk": "<nama_produk>",
+      "jenis": "diskon|donasi|buang",
+      "namaTindakan": "<Judul singkat tanpa emoji: 'Diskon Bertahap (30% Off)' | 'Donasi Limbah Pangan' | 'Pemusnahan Limbah'>",
+      "badgeWarna": "<#92400E untuk diskon, #9A3412 untuk donasi, #991B1B untuk buang>",
+      "badgeBg": "<#FEF3C7 untuk diskon, #FFEDD5 untuk donasi, #FEE2E2 untuk buang>",
+      "badgeBorder": "<#FDE68A untuk diskon, #FED7AA untuk donasi, #FECACA untuk buang>",
+      "prioritas": "Prioritas Tinggi | Prioritas Tertinggi | Tindakan Darurat",
+      "stok": <angka stok yang ditindak>,
+      "alasan": "<Penjelasan analitis mendalam mengapa tindakan ini diambil berdasarkan aturan 3 kategori>",
+      "estimasi": "<Estimasi dampak nilai finansial atau penyelamatan makanan>",
+      "tombolTeks": "Terapkan Diskon | Salurkan Donasi | Catat Pemusnahan"
+    }
+  ],
+  "saran_per_batch": {
+    "<kode_batch>": "<Saran tindakan ringkas & solutif tanpa emoji untuk batch ini sesuai aturan 3 kategori di atas>"
+  }
+}`;
+
+        const payload = {
+          contents: [{ parts: [{ text: promptText }] }],
+          generationConfig: {
+            temperature: 0.2,
+            topP: 0.95,
+            maxOutputTokens: 4096
+          }
+        };
+
+        const resGemini = await fetch(geminiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (resGemini.ok) {
+          const gemData = await resGemini.json();
+          let rawText = gemData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "{}";
+          if (rawText.startsWith("```")) {
+            const lines = rawText.split("\n");
+            if (lines[0].startsWith("```")) lines.shift();
+            if (lines.length && lines[lines.length - 1].startsWith("```")) lines.pop();
+            rawText = lines.join("\n").trim();
+          }
+          hasil = JSON.parse(rawText);
+          hasil.source = "google_gemini_direct";
+        }
+      }
+    } catch (errDirect) {
+      console.warn("Direct call ke Gemini API gagal:", errDirect);
+    }
+  }
+
+  sedangMemuatRekomendasiLLM = false;
+  if (btnRefresh) {
+    btnRefresh.disabled = false;
+    btnRefresh.innerHTML = `
+      <svg class="modern-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      <span>Analisis Ulang</span>
+    `;
+  }
+
+  if (hasil && Array.isArray(hasil.rekomendasi_tindakan) && hasil.rekomendasi_tindakan.length > 0) {
+    // Sanitasi semua teks dari emoji
+    hasil.rekomendasi_tindakan.forEach(item => {
+      item.namaTindakan = bersihkanEmojiTeks(item.namaTindakan);
+      item.prioritas = bersihkanEmojiTeks(item.prioritas);
+      item.alasan = bersihkanEmojiTeks(item.alasan);
+      item.estimasi = bersihkanEmojiTeks(item.estimasi);
+      item.tombolTeks = bersihkanEmojiTeks(item.tombolTeks);
+    });
+    if (hasil.saran_per_batch) {
+      Object.keys(hasil.saran_per_batch).forEach(k => {
+        hasil.saran_per_batch[k] = bersihkanEmojiTeks(hasil.saran_per_batch[k]);
+      });
+    }
+
+    window.rekomendasiLLMList = hasil.rekomendasi_tindakan;
+    window.rekomendasiBatchLLMMap = hasil.saran_per_batch || {};
+    try {
+      localStorage.setItem("freshlog_rekomendasi_llm_cache_v3", JSON.stringify(hasil));
+    } catch (eSave) {}
+  } else {
+    // Gunakan fallback preskriptif 3 kategori jika Gemini API belum tersambung
+    generateRekomendasiFallbackPreskriptif();
+  }
+
+  renderRekomendasiTindakanAI();
+  renderTabelInventaris();
+}
+
 function renderRekomendasiTindakanAI() {
   const container = document.getElementById("container-kartu-rekomendasi");
   if (!container) return;
 
+  // Jika daftar rekomendasi LLM masih kosong dan tidak sedang memuat, panggil Gemini
+  if ((!window.rekomendasiLLMList || window.rekomendasiLLMList.length === 0) && !sedangMemuatRekomendasiLLM) {
+    muatRekomendasiLLMGemini(false);
+    return;
+  }
+
   const filterJenis = document.getElementById("filter-jenis-tindakan-ai")?.value || "all";
-
-  // Analisis seluruh batch untuk menghasilkan rekomendasi berbasis AI
-  const rekomendasiList = [];
-
-  dataBatchDemo.forEach(batch => {
-    const risiko = hitungStatusRisikoLokal(batch);
-    const sisaStok = parseInt(batch.stock) || 0;
-    const sisaHari = risiko.sisa_hari;
-    const hargaBeli = 15000;
-    const hargaJual = 18000;
-
-    // Rekomendasi 1: Donasi Pangan
-    if (risiko.status === "merah" && sisaHari <= 3 && sisaStok > 0) {
-      rekomendasiList.push({
-        id: `ACT-DONASI-${batch.code}`,
-        jenis: "donasi",
-        namaTindakan: "🤝 Donasi Pangan Segera (Food Bank)",
-        badgeWarna: "#DC2626",
-        badgeBg: "#FEE2E2",
-        produk: batch.name,
-        batch: batch.code,
-        stok: sisaStok,
-        prioritas: "Prioritas Tertinggi (Segera)",
-        alasan: `Sisa ${sisaHari} hari sebelum kedaluwarsa. Kecepatan penjualan tidak mencukupi untuk menghabiskan ${sisaStok} unit. Donasikan ke mitra pangan lokal untuk mencegah pembusukan dan memanfaatkan insentif sosial.`,
-        estimasi: `Penyelamatan ${Math.round(sisaStok * 0.35)} kg makanan • Valuasi sosial Rp ${(sisaStok * hargaJual).toLocaleString("id-ID")}`,
-        tombolTeks: "Hubungi Mitra Donasi"
-      });
-    }
-
-    // Rekomendasi 2: Diskon Bertahap (Flash Sale)
-    if ((risiko.status === "merah" && sisaHari > 3) || (risiko.status === "kuning" && sisaHari <= 5)) {
-      const diskonPersen = sisaHari <= 4 ? 40 : 25;
-      rekomendasiList.push({
-        id: `ACT-DISKON-${batch.code}`,
-        jenis: "diskon",
-        namaTindakan: `🏷️ Diskon Bertahap (${diskonPersen}% Off)`,
-        badgeWarna: "#D97706",
-        badgeBg: "#FEF3C7",
-        produk: batch.name,
-        batch: batch.code,
-        stok: sisaStok,
-        prioritas: "Prioritas Tinggi",
-        alasan: `Stok ${sisaStok} unit berisiko kedaluwarsa dalam ${sisaHari} hari. Algoritma memprediksi pemotongan harga ${diskonPersen}% akan menaikkan laju penjualan hingga 3.2x lipat dan mengosongkan batch tepat waktu.`,
-        estimasi: `Potensi likuidasi omzet: Rp ${Math.round(sisaStok * hargaJual * (1 - diskonPersen / 100)).toLocaleString("id-ID")}`,
-        tombolTeks: "Terapkan Diskon ke Kasir"
-      });
-    }
-
-    // Rekomendasi 3: Promo Bundling
-    if (risiko.status === "kuning" && sisaHari > 5) {
-      rekomendasiList.push({
-        id: `ACT-BUNDLING-${batch.code}`,
-        jenis: "bundling",
-        namaTindakan: "🎁 Promo Bundling Hemat",
-        badgeWarna: "#2563EB",
-        badgeBg: "#EFF6FF",
-        produk: batch.name,
-        batch: batch.code,
-        stok: sisaStok,
-        prioritas: "Prioritas Sedang",
-        alasan: `Produk memiliki margin kotor yang baik namun laju keluar stabil moderat. Buat paket bundling dengan produk komplementer terlaris untuk melipatgandakan volume rotasi FEFO.`,
-        estimasi: `Menjaga margin laba ~18% sambil mengamankan ${sisaStok} unit batch.`,
-        tombolTeks: "Buat Paket Bundling"
-      });
-    }
-
-    // Rekomendasi 4: Pindah Cabang / Relokasi
-    if (sisaStok > 20 && sisaHari >= 7 && (batch.category === "Minuman & Dairy" || batch.category === "Makanan Fresh")) {
-      rekomendasiList.push({
-        id: `ACT-PINDAH-${batch.code}`,
-        jenis: "pindah",
-        namaTindakan: "🚚 Pindah Cabang (Cross-Store Transfer)",
-        badgeWarna: "#7C3AED",
-        badgeBg: "#F5F3FF",
-        produk: batch.name,
-        batch: batch.code,
-        stok: Math.round(sisaStok * 0.5),
-        prioritas: "Prioritas Optimal",
-        alasan: `Cabang Utama mengalami surplus ${sisaStok} unit, sedangkan data permintaan Cabang Sudirman memiliki defisit pasokan produk ini. Relokasikan sebagian stok untuk menghindari kanibalisasi diskon.`,
-        estimasi: `Menjual dengan harga penuh (100% margin) di gerai tujuan.`,
-        tombolTeks: "Jadwalkan Relokasi Cabang"
-      });
-    }
-  });
-
-  const hasilFilter = rekomendasiList.filter(item => {
+  const hasilFilter = (window.rekomendasiLLMList || []).filter(item => {
     if (filterJenis === "all") return true;
     return item.jenis === filterJenis;
   });
 
   if (hasilFilter.length === 0) {
-    container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 32px; color: var(--ink-muted);">Tidak ada rekomendasi tindakan untuk kategori ini saat ini. Semua stok terpantau stabil.</div>`;
+    container.innerHTML = `
+      <div style="grid-column: 1/-1; text-align: center; padding: 36px 20px; background: var(--bg-card-white, #FFFFFF); border-radius: 16px; border: 1px solid var(--border-hairline, #E2E8F0); color: var(--ink-muted);">
+        <p style="font-size: 1rem; font-weight: 600; color: var(--ink-charcoal); margin-bottom: 4px;">Tidak ada rekomendasi tindakan untuk kategori ini.</p>
+        <small style="color: var(--ink-secondary);">Semua produk pada kategori ini terpantau aman sesuai rotasi FEFO.</small>
+      </div>
+    `;
     return;
   }
 
-  container.innerHTML = hasilFilter.map(item => `
-    <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 14px; padding: 18px 20px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); display: flex; flex-direction: column; justify-content: space-between;">
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-          <span style="background: ${item.badgeBg}; color: ${item.badgeWarna}; padding: 4px 10px; border-radius: 999px; font-weight: 700; font-size: 0.78rem;">
-            ${item.namaTindakan}
-          </span>
-          <small style="font-size: 0.74rem; font-weight: 700; color: #64748B;">${item.prioritas}</small>
-        </div>
-        <h3 style="font-size: 1.05rem; margin: 0 0 4px; color: var(--ink-charcoal);">${item.produk}</h3>
-        <p style="font-size: 0.8rem; color: var(--ink-secondary); margin: 0 0 12px;">Batch: <strong>${item.batch}</strong> • Alokasi: <strong>${item.stok} Unit</strong></p>
-        
-        <div style="background: #F8FAF9; border-radius: 10px; padding: 12px; margin-bottom: 12px; border-left: 3px solid ${item.badgeWarna}; font-size: 0.83rem; line-height: 1.5; color: #334155;">
-          <strong>Alasan Rekomendasi AI:</strong><br>
-          ${item.alasan}
-        </div>
-      </div>
+  container.innerHTML = hasilFilter.map(item => {
+    const jenis = (item.jenis || "").toLowerCase();
+    
+    // Normalisasi badge & ikon stroke SVG modern sesuai 3 kategori
+    let badgeBg = item.badgeBg || "#FEF3C7";
+    let badgeWarna = item.badgeWarna || "#92400E";
+    let badgeBorder = item.badgeBorder || "#FDE68A";
+    let prioritasWarna = "#D97706";
+    let iconSvg = `<svg class="modern-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`;
+    let defaultJudul = "Diskon Bertahap";
+    let defaultTombol = "Terapkan Diskon";
+    let defaultPrioritas = "Prioritas Tinggi";
 
-      <div>
-        <div style="font-size: 0.78rem; color: #158050; font-weight: 700; margin-bottom: 12px;">
-          🌱 ${item.estimasi}
+    if (jenis === "buang") {
+      badgeBg = "#FEE2E2";
+      badgeWarna = "#991B1B";
+      badgeBorder = "#FECACA";
+      prioritasWarna = "#DC2626";
+      iconSvg = `<svg class="modern-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`;
+      defaultJudul = "Pemusnahan Limbah";
+      defaultTombol = "Catat Pemusnahan";
+      defaultPrioritas = "Tindakan Darurat";
+    } else if (jenis === "donasi") {
+      badgeBg = "#FFEDD5";
+      badgeWarna = "#9A3412";
+      badgeBorder = "#FED7AA";
+      prioritasWarna = "#EA580C";
+      iconSvg = `<svg class="modern-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+      defaultJudul = "Donasi Limbah Pangan";
+      defaultTombol = "Salurkan Donasi";
+      defaultPrioritas = "Prioritas Tertinggi";
+    }
+
+    // Bersihkan judul dari sisa teks teknis/emoji
+    let judul = bersihkanEmojiTeks(item.namaTindakan) || defaultJudul;
+    judul = judul.replace(/\(0 Hari \/ Expired\)/gi, "").replace(/\(3–1 Hari Sebelum Exp\)/gi, "").replace(/\(3-1 Hari Sebelum Exp\)/gi, "").trim();
+    if (!judul) judul = defaultJudul;
+
+    const prioritas = bersihkanEmojiTeks(item.prioritas) || defaultPrioritas;
+    const alasan = bersihkanEmojiTeks(item.alasan);
+    const estimasi = bersihkanEmojiTeks(item.estimasi);
+    let tombol = bersihkanEmojiTeks(item.tombolTeks) || defaultTombol;
+    tombol = tombol.replace(/^[✓\s]+/, "").trim();
+
+    // Cek status batch di dataBatchDemo untuk idempotency & status final
+    const batchKode = item.batch || item.id || "";
+    const batchObj = (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo))
+      ? dataBatchDemo.find(b => b.code === batchKode || b.code === item.id)
+      : null;
+    const sisaStokBatch = batchObj ? (parseFloat(batchObj.stock) || 0) : (parseFloat(item.stok) || 0);
+    const statusBatch = batchObj && batchObj.status ? String(batchObj.status).toUpperCase() : "AKTIF";
+    const isFinal = statusBatch === "TERJUAL" || statusBatch === "DONASI" || statusBatch === "BUSUK" || (batchObj && (batchObj.is_final || (sisaStokBatch <= 0 && statusBatch !== "AKTIF")));
+
+    let areaAksiHTML = "";
+    if (isFinal || sisaStokBatch <= 0) {
+      let badgeColor = "#158050";
+      let badgeBg = "#DCFCE7";
+      let badgeBorder = "#BBF7D0";
+      if (statusBatch === "BUSUK") {
+        badgeColor = "#991B1B"; badgeBg = "#FEE2E2"; badgeBorder = "#FECACA";
+      } else if (statusBatch === "DONASI") {
+        badgeColor = "#9A3412"; badgeBg = "#FFEDD5"; badgeBorder = "#FED7AA";
+      }
+      areaAksiHTML = `
+        <div style="padding: 10px 14px; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; border-radius: 10px; text-align: center; font-size: 0.8rem; font-weight: 700;">
+          ✓ Status Final: ${statusBatch} (Tercatat di Dampak Pangan)
         </div>
-        <button type="button" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center;" onclick="eksekusiTindakanAI('${item.id}', '${item.namaTindakan}', '${item.produk}')">
-          ✓ ${item.tombolTeks}
-        </button>
+      `;
+    } else {
+      areaAksiHTML = `
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+          <button type="button" class="btn btn-sm" style="background: #10B981; color: #FFFFFF; border: none; padding: 8px 4px; font-size: 0.74rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: transform 0.1s ease;" onclick="bukaKonfirmasiAksiBatch('${batchKode}', 'TERJUAL')" title="Tandai batch ini Terjual">
+            <span>✅ Terjual</span>
+          </button>
+          <button type="button" class="btn btn-sm" style="background: #F59E0B; color: #FFFFFF; border: none; padding: 8px 4px; font-size: 0.74rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: transform 0.1s ease;" onclick="bukaKonfirmasiAksiBatch('${batchKode}', 'DONASI')" title="Tandai batch ini Donasi">
+            <span>🎁 Donasi</span>
+          </button>
+          <button type="button" class="btn btn-sm" style="background: #EF4444; color: #FFFFFF; border: none; padding: 8px 4px; font-size: 0.74rem; font-weight: 700; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: transform 0.1s ease;" onclick="bukaKonfirmasiAksiBatch('${batchKode}', 'BUSUK')" title="Tandai batch ini Busuk/Dibuang">
+            <span>❌ Busuk/Dibuang</span>
+          </button>
+        </div>
+      `;
+    }
+
+    return `
+      <div style="background: var(--bg-card-white, #FFFFFF); border: 1px solid var(--border-hairline, #E8ECEA); border-radius: 16px; padding: 20px; box-shadow: var(--shadow-subtle, 0 4px 14px rgba(17, 24, 20, 0.03)); display: flex; flex-direction: column; justify-content: space-between; gap: 14px;">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px;">
+            <span style="background: ${badgeBg}; color: ${badgeWarna}; border: 1px solid ${badgeBorder}; padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 0.76rem; display: inline-flex; align-items: center; gap: 5px;">
+              ${iconSvg}
+              <span>${judul}</span>
+            </span>
+            <span style="font-size: 0.74rem; font-weight: 600; color: ${prioritasWarna};">${prioritas}</span>
+          </div>
+
+          <h3 style="font-size: 1.05rem; margin: 0 0 4px; color: var(--ink-charcoal); font-weight: 700;">${item.produk}</h3>
+          <p style="font-size: 0.8rem; color: var(--ink-secondary); margin: 0 0 12px;">Batch: <strong style="color: var(--ink-charcoal);">${item.batch}</strong> • Alokasi Rekomendasi: <strong style="color: var(--ink-charcoal);">${item.stok} Unit</strong></p>
+          
+          <div style="background: var(--bg-nested-subtle, #F8FAF9); border-radius: 12px; padding: 12px 14px; border: 1px solid var(--border-hairline, #E8ECEA); font-size: 0.82rem; line-height: 1.5; color: #334155;">
+            <div style="font-weight: 700; color: var(--ink-charcoal); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+              <svg class="modern-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              <span>Rekomendasi Preskriptif:</span>
+            </div>
+            <div style="color: var(--ink-secondary);">${alasan}</div>
+          </div>
+        </div>
+
+        <div>
+          <div style="font-size: 0.78rem; color: var(--status-success-ink, #158050); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <svg class="modern-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>${estimasi}</span>
+          </div>
+          ${areaAksiHTML}
+        </div>
       </div>
-    </div>
-  `).join("");
+    `;
+  }).join("");
 }
 
-function eksekusiTindakanAI(id, aksi, produk) {
-  if (confirm(`Konfirmasi eksekusi rekomendasi AI: "${aksi}" untuk produk "${produk}"?`)) {
-    if (typeof catatLogAktivitas === "function") {
-      catatLogAktivitas("Eksekusi AI Action", `Menyetujui rekomendasi ${aksi} untuk ${produk}`, "Analitik AI");
-    }
-    alert(`Berhasil! Tindakan "${aksi}" untuk "${produk}" telah dijadwalkan dan diterapkan ke modul sistem terkait.`);
+/* ============================================================================= */
+/* SINGLE SOURCE OF TRUTH: TABEL DAMPAK PANGAN & AKSI AKHIR BATCH               */
+/* ============================================================================= */
+const defaultDampakPanganData = [
+  {
+    id: "DP-20261102-001",
+    batch_id: "BTC-001",
+    produk: "Susu UHT 1L",
+    qty_kg: 60.0,
+    nilai_rupiah: 3000000,
+    tipe: "TERSELAMATKAN",
+    aksi: "TERJUAL",
+    tanggal: "2026-11-02",
+    waktu: "2026-11-02T10:15:00",
+    user_id: "admin"
+  },
+  {
+    id: "DP-20261105-002",
+    batch_id: "BTC-002",
+    produk: "Roti Tawar Daging",
+    qty_kg: 120.0,
+    nilai_rupiah: 6000000,
+    tipe: "TERSELAMATKAN",
+    aksi: "TERJUAL",
+    tanggal: "2026-11-05",
+    waktu: "2026-11-05T14:30:00",
+    user_id: "staf1"
+  },
+  {
+    id: "DP-20261108-003",
+    batch_id: "BTC-003",
+    produk: "Yogurt Stroberi",
+    qty_kg: 86.0,
+    nilai_rupiah: 4311000,
+    tipe: "TERSELAMATKAN",
+    aksi: "DONASI",
+    tanggal: "2026-11-08",
+    waktu: "2026-11-08T11:00:00",
+    user_id: "admin"
+  },
+  {
+    id: "DP-20261109-004",
+    batch_id: "BTC-EX-99",
+    produk: "Tahu Sumedang",
+    qty_kg: 15.0,
+    nilai_rupiah: 225000,
+    tipe: "TIDAK_TERSELAMATKAN",
+    aksi: "BUSUK",
+    tanggal: "2026-11-09",
+    waktu: "2026-11-09T16:45:00",
+    user_id: "staf2"
   }
+];
+
+function getDampakPanganList() {
+  try {
+    const raw = localStorage.getItem("freshlog_dampak_pangan");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (e) {
+    console.warn("Gagal membaca freshlog_dampak_pangan dari storage:", e);
+  }
+  localStorage.setItem("freshlog_dampak_pangan", JSON.stringify(defaultDampakPanganData));
+  return [...defaultDampakPanganData];
+}
+
+function simpanDampakPanganRecord(record) {
+  const list = getDampakPanganList();
+  list.unshift(record);
+  localStorage.setItem("freshlog_dampak_pangan", JSON.stringify(list));
+}
+
+// Toast Notifikasi
+function tampilkanToast(pesan, tipe = "success") {
+  const container = document.getElementById("toast-container");
+  if (!container) {
+    alert(pesan);
+    return;
+  }
+  const toast = document.createElement("div");
+  const isError = tipe === "error";
+  toast.style.cssText = `
+    background: #0F172A;
+    color: #FFFFFF;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+    border-left: 4px solid ${isError ? "#EF4444" : "#10B981"};
+    animation: fadeInToast 0.3s ease;
+  `;
+  toast.innerHTML = `<span>${isError ? "⚠️" : "✅"}</span><span>${pesan}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 0.3s ease";
+    setTimeout(() => toast.remove(), 300);
+  }, 3500);
+}
+
+// Navigasi ke Laporan Rekapitulasi dari tombol "Lihat Detail" di Dashboard
+function navigasiKeLaporanDampak() {
+  pindahHalaman("laporan");
+}
+
+// LOKASI 1: DASHBOARD (RINGKAS)
+function renderDashboardDampakRingkas() {
+  const records = getDampakPanganList();
+  const now = new Date();
+  const currYear = now.getFullYear();
+  const currMonth = String(now.getMonth() + 1).padStart(2, "0");
+  const prefixBulan = `${currYear}-${currMonth}`;
+
+  // Ambil records bulan ini (atau fallback default demo November 2026)
+  const recordsBulanIni = records.filter(r => {
+    if (!r.tanggal) return false;
+    return r.tanggal.startsWith(prefixBulan) || r.tanggal.startsWith("2026-11");
+  });
+
+  let selamatKg = 0;
+  let selamatRp = 0;
+  let gagalKg = 0;
+  let gagalRp = 0;
+
+  recordsBulanIni.forEach(r => {
+    const kg = parseFloat(r.qty_kg) || 0;
+    const rp = parseInt(r.nilai_rupiah) || 0;
+    if (r.tipe === "TERSELAMATKAN") {
+      selamatKg += kg;
+      selamatRp += rp;
+    } else {
+      gagalKg += kg;
+      gagalRp += rp;
+    }
+  });
+
+  const elSelamatKg = document.getElementById("dash-dampak-terselamatkan-kg");
+  const elSelamatRp = document.getElementById("dash-dampak-terselamatkan-rp");
+  const elGagalKg = document.getElementById("dash-dampak-gagal-kg");
+  const elGagalRp = document.getElementById("dash-dampak-gagal-rp");
+
+  // Nilai fallback demo awal jika belum ada transaksi di bulan ini
+  if (selamatKg === 0) {
+    selamatKg = 266;
+    selamatRp = 13311000;
+  }
+  if (gagalKg === 0) {
+    gagalKg = 15;
+    gagalRp = 225000;
+  }
+
+  if (elSelamatKg) {
+    elSelamatKg.innerText = (selamatKg % 1 === 0)
+      ? Math.round(selamatKg).toLocaleString("id-ID")
+      : selamatKg.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+  if (elSelamatRp) elSelamatRp.innerText = selamatRp.toLocaleString("id-ID");
+
+  if (elGagalKg) {
+    elGagalKg.innerText = (gagalKg % 1 === 0)
+      ? Math.round(gagalKg).toLocaleString("id-ID")
+      : gagalKg.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+  if (elGagalRp) elGagalRp.innerText = gagalRp.toLocaleString("id-ID");
+}
+
+// LOKASI 2: LAPORAN -> DAMPAK PANGAN (DETAIL)
+function renderLaporanDampakDetail() {
+  const allRecords = getDampakPanganList();
+
+  // Sinkronisasi opsi produk di dropdown filter produk dampak
+  const elProdukSelect = document.getElementById("dampak-filter-produk");
+  if (elProdukSelect) {
+    const currentVal = elProdukSelect.value || "all";
+    const daftarProduk = Array.from(new Set([
+      ...allRecords.map(r => r.produk).filter(Boolean),
+      ...(typeof masterProdukList !== "undefined" && Array.isArray(masterProdukList) ? masterProdukList.map(p => p.nama) : [])
+    ])).sort();
+
+    let optionsHtml = `<option value="all">Semua Produk</option>`;
+    daftarProduk.forEach(nama => {
+      const selected = (nama === currentVal) ? "selected" : "";
+      optionsHtml += `<option value="${nama}" ${selected}>${nama}</option>`;
+    });
+    elProdukSelect.innerHTML = optionsHtml;
+  }
+
+  const filterBulan = document.getElementById("dampak-filter-bulan")?.value || "all";
+  const filterTahun = document.getElementById("dampak-filter-tahun")?.value || "all";
+  const filterProduk = document.getElementById("dampak-filter-produk")?.value || "all";
+
+  // Filter records
+  const filtered = allRecords.filter(r => {
+    if (!r.tanggal) return false;
+    const parts = r.tanggal.split("-");
+    const rTahun = parts[0];
+    const rBulan = String(parseInt(parts[1], 10));
+
+    if (filterTahun !== "all" && rTahun !== filterTahun) return false;
+    if (filterBulan !== "all" && rBulan !== filterBulan) return false;
+    if (filterProduk !== "all" && r.produk !== filterProduk) return false;
+    return true;
+  });
+
+  // Hitung metrik tree breakdown
+  let terjualKg = 0;
+  let terjualRp = 0;
+  let donasiKg = 0;
+  let donasiRp = 0;
+  let gagalKg = 0;
+  let gagalRp = 0;
+
+  filtered.forEach(r => {
+    const kg = parseFloat(r.qty_kg) || 0;
+    const rp = parseInt(r.nilai_rupiah) || 0;
+    const aksiUpper = (r.aksi || "").toUpperCase();
+    if (aksiUpper === "TERJUAL") {
+      terjualKg += kg;
+      terjualRp += rp;
+    } else if (aksiUpper === "DONASI") {
+      donasiKg += kg;
+      donasiRp += rp;
+    } else if (aksiUpper === "BUSUK") {
+      gagalKg += kg;
+      gagalRp += rp;
+    }
+  });
+
+  const totalSelamatKg = terjualKg + donasiKg;
+  const totalSelamatRp = terjualRp + donasiRp;
+
+  // Render angka-angka ke tampilan Tree
+  const elTreeTerjualKg = document.getElementById("tree-terjual-kg");
+  const elTreeTerjualRp = document.getElementById("tree-terjual-rp");
+  const elTreeDonasiKg = document.getElementById("tree-donasi-kg");
+  const elTreeDonasiRp = document.getElementById("tree-donasi-rp");
+  const elTreeSelamatTotalKg = document.getElementById("tree-selamat-total-kg");
+  const elTreeSelamatTotalRp = document.getElementById("tree-selamat-total-rp");
+  const elTreeGagalTotalKg = document.getElementById("tree-gagal-total-kg");
+  const elTreeGagalTotalRp = document.getElementById("tree-gagal-total-rp");
+
+  if (elTreeTerjualKg) elTreeTerjualKg.innerText = terjualKg.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (elTreeTerjualRp) elTreeTerjualRp.innerText = `Rp ${terjualRp.toLocaleString("id-ID")}`;
+  if (elTreeDonasiKg) elTreeDonasiKg.innerText = donasiKg.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (elTreeDonasiRp) elTreeDonasiRp.innerText = `Rp ${donasiRp.toLocaleString("id-ID")}`;
+  if (elTreeSelamatTotalKg) elTreeSelamatTotalKg.innerText = totalSelamatKg.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (elTreeSelamatTotalRp) elTreeSelamatTotalRp.innerText = `Rp ${totalSelamatRp.toLocaleString("id-ID")}`;
+  if (elTreeGagalTotalKg) elTreeGagalTotalKg.innerText = gagalKg.toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  if (elTreeGagalTotalRp) elTreeGagalTotalRp.innerText = `Rp ${gagalRp.toLocaleString("id-ID")}`;
+
+  // Render tabel rincian transaksi
+  const tbody = document.getElementById("table-dampak-pangan-body");
+  if (tbody) {
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 24px; color: var(--ink-secondary);">Tidak ada catatan transaksi dampak pangan untuk periode/produk ini.</td></tr>`;
+    } else {
+      tbody.innerHTML = filtered.map(r => {
+        const kg = (parseFloat(r.qty_kg) || 0).toLocaleString("id-ID", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        const rp = (parseInt(r.nilai_rupiah) || 0).toLocaleString("id-ID");
+        const aksi = (r.aksi || "").toUpperCase();
+        let badgeAksi = `<span class="badge" style="background:#dcfce7; color:#158050; border:1px solid #bbf7d0;">✅ TERJUAL</span>`;
+        if (aksi === "DONASI") {
+          badgeAksi = `<span class="badge" style="background:#fef3c7; color:#b45309; border:1px solid #fde68a;">🎁 DONASI</span>`;
+        } else if (aksi === "BUSUK") {
+          badgeAksi = `<span class="badge" style="background:#fee2e2; color:#b91c1c; border:1px solid #fecaca;">❌ BUSUK</span>`;
+        }
+
+        const tipeBadge = (r.tipe === "TERSELAMATKAN")
+          ? `<span style="color:#158050; font-weight:700;">Terselamatkan</span>`
+          : `<span style="color:#b91c1c; font-weight:700;">Tidak Terselamatkan (Rugi)</span>`;
+
+        return `
+          <tr>
+            <td><strong>${r.tanggal || "-"}</strong></td>
+            <td><code>${r.batch_id || "-"}</code></td>
+            <td><strong>${r.produk || "-"}</strong></td>
+            <td>${badgeAksi}</td>
+            <td>${tipeBadge}</td>
+            <td style="font-weight:700;">${kg} kg</td>
+            <td style="font-weight:700;">Rp ${rp}</td>
+            <td><small style="color:var(--ink-secondary);">${r.user_id || "admin"}</small></td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+}
+
+function resetFilterLaporanDampak() {
+  const elBulan = document.getElementById("dampak-filter-bulan");
+  const elTahun = document.getElementById("dampak-filter-tahun");
+  const elProduk = document.getElementById("dampak-filter-produk");
+  if (elBulan) elBulan.value = "11";
+  if (elTahun) elTahun.value = "2026";
+  if (elProduk) elProduk.value = "all";
+  renderLaporanDampakDetail();
+}
+
+function terapkanFilterLaporanDampak() {
+  renderLaporanDampakDetail();
+}
+
+// Modal Konfirmasi & Eksekusi Aksi Akhir Batch
+let pendingAksiBatch = null;
+
+function bukaKonfirmasiAksiBatch(batchCode, aksi) {
+  const batchObj = (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo))
+    ? dataBatchDemo.find(b => b.code === batchCode)
+    : null;
+  if (!batchObj) {
+    alert("Data batch tidak ditemukan!");
+    return;
+  }
+  const statusBatch = (batchObj.status || "AKTIF").toUpperCase();
+  if (statusBatch === "TERJUAL" || statusBatch === "DONASI" || statusBatch === "BUSUK") {
+    alert(`Batch ${batchCode} sudah berstatus final (${statusBatch}) dan tidak dapat diproses ulang.`);
+    return;
+  }
+
+  const qty = parseFloat(batchObj.stock) || 0;
+  pendingAksiBatch = {
+    batchCode: batchCode,
+    aksi: aksi,
+    qty: qty,
+    produk: batchObj.name
+  };
+
+  const modal = document.getElementById("modal-konfirmasi-aksi-batch");
+  const modalDesc = document.getElementById("modal-konfirmasi-deskripsi");
+  const modalTitle = document.getElementById("modal-konfirmasi-title");
+  const modalIcon = document.getElementById("modal-konfirmasi-icon");
+
+  if (modalTitle) modalTitle.innerText = `Konfirmasi Aksi: ${aksi}`;
+  if (modalIcon) {
+    if (aksi === "TERJUAL") { modalIcon.innerText = "✅"; modalIcon.style.background = "#dcfce7"; }
+    else if (aksi === "DONASI") { modalIcon.innerText = "🎁"; modalIcon.style.background = "#fef3c7"; }
+    else { modalIcon.innerText = "❌"; modalIcon.style.background = "#fee2e2"; }
+  }
+  if (modalDesc) {
+    modalDesc.innerHTML = `Tandai batch ini <strong>${aksi}</strong>?<br>Stok akan berkurang <strong>${qty} kg</strong> dan tercatat di Dampak Pangan.`;
+  }
+  if (modal) modal.classList.add("active");
+}
+
+function tutupModalKonfirmasiAksiBatch() {
+  const modal = document.getElementById("modal-konfirmasi-aksi-batch");
+  if (modal) modal.classList.remove("active");
+  pendingAksiBatch = null;
+}
+
+async function eksekusiAksiBatchKonfirmasi() {
+  if (!pendingAksiBatch) return;
+  const { batchCode, aksi, qty, produk } = pendingAksiBatch;
+
+  const batchObj = dataBatchDemo.find(b => b.code === batchCode);
+  if (!batchObj) {
+    alert("Batch tidak ditemukan.");
+    tutupModalKonfirmasiAksiBatch();
+    return;
+  }
+
+  const statusSaatIni = (batchObj.status || "AKTIF").toUpperCase();
+  if (statusSaatIni === "TERJUAL" || statusSaatIni === "DONASI" || statusSaatIni === "BUSUK") {
+    alert(`Gagal: Batch ${batchCode} sudah berstatus ${statusSaatIni} sebelumnya (idempotent).`);
+    tutupModalKonfirmasiAksiBatch();
+    return;
+  }
+
+  // Cari perkiraan harga dari master produk / productDatabase
+  let hargaProduk = 18000;
+  if (typeof masterProdukList !== "undefined" && Array.isArray(masterProdukList)) {
+    const prodMaster = masterProdukList.find(p => p.nama === produk);
+    if (prodMaster && prodMaster.hargaJual) hargaProduk = parseFloat(prodMaster.hargaJual);
+  }
+  const nilaiRupiah = Math.round(qty * hargaProduk);
+  const tipeDampak = (aksi === "BUSUK") ? "TIDAK_TERSELAMATKAN" : "TERSELAMATKAN";
+  const userAktifKey = (typeof activeUserKey !== "undefined" && activeUserKey) ? activeUserKey : "admin";
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const nowIso = new Date().toISOString();
+
+  // a. Batch keluar dari stok aktif (qty = 0)
+  batchObj.stock = 0;
+  // b. Set status batch = 'TERJUAL' | 'DONASI' | 'BUSUK' (FINAL, tidak bisa diubah)
+  batchObj.status = aksi;
+  batchObj.is_final = true;
+
+  // Simpan state batch ke localStorage
+  localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo));
+
+  // c. Simpan record ke tabel dampak_pangan
+  const recordDampak = {
+    id: `DP-${Date.now()}-${batchCode}`,
+    batch_id: batchCode,
+    produk: produk,
+    qty_kg: qty,
+    nilai_rupiah: nilaiRupiah,
+    tipe: tipeDampak,
+    aksi: aksi,
+    tanggal: todayStr,
+    waktu: nowIso,
+    user_id: userAktifKey
+  };
+  simpanDampakPanganRecord(recordDampak);
+
+  // Sync ke backend FastAPI (idempotent)
+  try {
+    await fetch(`${FRESHLOG_API_BASE}/dampak-pangan/catat-aksi-akhir`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        batch_id: batchCode,
+        aksi: aksi,
+        produk: produk,
+        qty_kg: qty,
+        nilai_rupiah: nilaiRupiah,
+        user_id: userAktifKey
+      })
+    });
+  } catch (errSync) {
+    console.warn("Sinkronisasi dampak pangan ke backend offline:", errSync);
+  }
+
+  // Tutup modal
+  tutupModalKonfirmasiAksiBatch();
+
+  // 3. Tombol aksi HILANG setelah status final (re-render)
+  renderRekomendasiTindakanAI();
+  renderTabelInventaris();
+  updateDashboardSummary();
+
+  // Update Lokasi Dampak Pangan (Dashboard & Laporan)
+  renderDashboardDampakRingkas();
+  if (typeof terapkanFilterLaporan === "function") terapkanFilterLaporan();
+
+  // Catat ke log aktivitas
+  if (typeof catatLogAktivitas === "function") {
+    catatLogAktivitas("Aksi Akhir Batch", `Menandai batch ${batchCode} (${produk}) sebagai ${aksi} [${qty} kg, Rp ${nilaiRupiah.toLocaleString("id-ID")}]`, "Analitik AI");
+  }
+
+  // 4. Tampilkan toast sukses: "Batch tercatat sebagai [Terjual/Donasi/Busuk]"
+  const labelAksi = (aksi === "BUSUK") ? "Busuk" : (aksi === "DONASI" ? "Donasi" : "Terjual");
+  tampilkanToast(`Batch tercatat sebagai ${labelAksi}`);
 }
 
 // -----------------------------------------------------------------------------
@@ -5135,7 +6905,50 @@ async function hitungUlangRestockAI() {
 
   const listItems = Object.values(produkAgg);
 
-  const hasilRestock = listItems.map(item => {
+  const hasilRestock = await Promise.all(listItems.map(async item => {
+    // 1. Coba hitung via endpoint backend FastAPI (/restock)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(`${FRESHLOG_API_BASE}/restock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          produk: item.name,
+          sisa_stok: item.totalStock,
+          penjualan_14_hari: item.penjualan_14_hari,
+          hari_target: targetHari
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const json = await res.json();
+        const estHabis = json.estimasi_habis_hari;
+        const saranBelanja = json.saran_belanja;
+        let statusBadge = "";
+        if (parseFloat(estHabis) <= 3) {
+          statusBadge = `<span style="background: #FEE2E2; color: #DC2626; padding: 3px 8px; border-radius: 999px; font-size: 0.76rem; font-weight: 700;">🔴 Stok Kritis</span>`;
+        } else if (saranBelanja > 0) {
+          statusBadge = `<span style="background: #FEF3C7; color: #D97706; padding: 3px 8px; border-radius: 999px; font-size: 0.76rem; font-weight: 700;">🟠 Perlu Restock</span>`;
+        } else {
+          statusBadge = `<span style="background: #EBF8F1; color: #158050; padding: 3px 8px; border-radius: 999px; font-size: 0.76rem; font-weight: 700;">🟢 Stok Aman</span>`;
+        }
+        return {
+          name: item.name,
+          codes: item.codes.join(", "),
+          totalStock: item.totalStock,
+          rataRataHarian: json.rata_rata_harian,
+          estimasiHabisHari: estHabis,
+          saranBelanja: saranBelanja,
+          statusBadge: statusBadge
+        };
+      }
+    } catch (errRestock) {
+      // Backend offline, beralih ke kalkulasi lokal
+    }
+
+    // 2. Fallback kalkulasi matematis lokal
     const hist = item.penjualan_14_hari;
     const avg = hist.reduce((a, b) => a + b, 0) / hist.length;
     const avgRound = Math.round(avg * 10) / 10;
@@ -5161,7 +6974,7 @@ async function hitungUlangRestockAI() {
       saranBelanja: saranBelanja,
       statusBadge: statusBadge
     };
-  });
+  }));
 
   tbody.innerHTML = hasilRestock.map(r => `
     <tr>
@@ -5517,7 +7330,7 @@ function mulaiRekam() {
 
 // URL Gemini API fallback (jika backend offline, kunci dapat disimpan di localStorage)
 function getGeminiApiUrl() {
-  const userKey = localStorage.getItem("gemini_api_key") || "";
+  const userKey = localStorage.getItem("gemini_api_key") || getGeminiApiKey();
   if (!userKey) return "";
   return `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${userKey}`;
 }
@@ -5767,7 +7580,7 @@ async function ekstrakFoto() {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-    const response = await fetch("http://127.0.0.1:8000/baca-nota", {
+    const response = await fetch(`${FRESHLOG_API_BASE}/baca-nota`, {
       method: "POST",
       body: formData,
       signal: controller.signal
@@ -5989,7 +7802,7 @@ async function simpanDanTesBot() {
   const pesan = `<b>⚠️ Peringatan Kedaluwarsa FreshLog</b>\nTerdapat ${merahCount} Batch Segera Kedaluwarsa (Merah, Skor 70-100) dan ${menipisCount} Produk Stok Menipis.`;
 
   try {
-    const response = await fetch("http://127.0.0.1:8000/kirim-notifikasi", {
+    const response = await fetch(`${FRESHLOG_API_BASE}/kirim-notifikasi`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chat_id: chatId, pesan: pesan })
@@ -6005,7 +7818,7 @@ async function simpanDanTesBot() {
       alert("Gagal: " + (result.detail || result.message || "Gagal mengirim notifikasi"));
     }
   } catch (error) {
-    alert("Gagal terhubung ke FastAPI backend (http://127.0.0.1:8000). Pastikan server uvicorn sudah berjalan.");
+    alert(`Gagal terhubung ke FastAPI backend (${FRESHLOG_API_BASE}). Pastikan server uvicorn sudah berjalan.`);
   }
 }
 
@@ -6654,19 +8467,29 @@ document.addEventListener("DOMContentLoaded", function () {
   if (daftarAkun[activeUserKey]) {
     perbaruiProfilSidebar(daftarAkun[activeUserKey]);
   }
+  if (typeof terapkanHakAksesRoleStokBatch === "function") {
+    terapkanHakAksesRoleStokBatch();
+  }
+  if (typeof terapkanHakAksesRoleMenu === "function") {
+    terapkanHakAksesRoleMenu();
+  }
+  if (typeof renderTabelMasterProduk === "function") {
+    renderTabelMasterProduk();
+  }
   initHalamanPengaturan();
   initHalamanLaporan();
   initHalamanAnalitikAI();
-});
-
-// Handler fungsi helper prosesLogin
-function prosesLogin() {
-  const form = document.getElementById("loginForm");
-  if (form) {
-    if (typeof form.requestSubmit === "function") {
-      form.requestSubmit();
-    } else {
-      form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
-    }
+  if (typeof renderDashboardDampakRingkas === "function") {
+    renderDashboardDampakRingkas();
   }
-}
+
+  // Periksa apakah sistem login sedang terkunci status Brute-Force 15 menit
+  try {
+    const statusLock = periksaStatusLockout();
+    if (statusLock && statusLock.terkunci) {
+      mulaiHitungMundurLockout(null, statusLock.sisaDetik);
+    }
+  } catch (errLock) {
+    console.error("Gagal memeriksa status lockout:", errLock);
+  }
+});
