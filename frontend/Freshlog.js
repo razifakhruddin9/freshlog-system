@@ -5225,7 +5225,11 @@ function terapkanHakAksesRoleMenu(role) {
     }
   }
 
-  // 3. Batasi Fitur Sinkronisasi Supabase di Pengaturan: Khusus Admin Toko
+  // 3. Batasi Fitur Sinkronisasi Supabase di Pengaturan & Sidebar: Khusus Admin Toko
+  const navItemCloudSync = document.getElementById("nav-item-cloud-sync");
+  if (navItemCloudSync) {
+    navItemCloudSync.style.display = isStaff ? "none" : "";
+  }
   const btnTabCloudSync = document.getElementById("btn-tab-cloud-sync");
   if (btnTabCloudSync) {
     btnTabCloudSync.style.display = isStaff ? "none" : "";
@@ -5516,11 +5520,15 @@ function filterPemasok() {
 /* 5. MODUL CLOUD DATABASE SUPABASE & SINKRONISASI DUA ARAH       */
 /* ============================================================== */
 
+// Default Kredensial Cloud Database Supabase Resmi FreshLog (Pre-configured untuk Juri & Pengguna)
+const DEFAULT_SUPABASE_URL = "https://hogrejhcoctnzjbtemuj.supabase.co";
+const DEFAULT_SUPABASE_KEY = "sb_publishable_BQZNmS6X4l8p2o9y8v8nEA_phPKoc9W";
+
 function getSupabaseConfig() {
-  let url = (localStorage.getItem("supabase_url") || "").trim().replace(/\/+$/, "");
+  let url = (localStorage.getItem("supabase_url") || DEFAULT_SUPABASE_URL || "").trim().replace(/\/+$/, "");
   // Otomatis bersihkan jika pengguna menyalin dengan akhiran /rest/v1
   url = url.replace(/\/rest\/v1\/?$/, "").replace(/\/+$/, "");
-  const key = (localStorage.getItem("supabase_key") || "").trim();
+  const key = (localStorage.getItem("supabase_key") || DEFAULT_SUPABASE_KEY || "").trim();
   return { url, key, isConfigured: Boolean(url && key) };
 }
 
@@ -5541,24 +5549,78 @@ function perbaruiIndikatorStatusSupabase(status, pesan) {
   const badge = document.getElementById("supabase-status-badge");
   const dot = document.getElementById("supabase-status-dot");
   const text = document.getElementById("supabase-status-text");
-  if (!badge || !dot || !text) return;
-
-  if (status === "connected") {
-    badge.style.background = "#dcfce7";
-    badge.style.color = "#166534";
-    dot.style.background = "#22c55e";
-    text.innerText = pesan || "Terhubung ke Supabase";
-  } else if (status === "error") {
-    badge.style.background = "#fee2e2";
-    badge.style.color = "#991b1b";
-    dot.style.background = "#ef4444";
-    text.innerText = pesan || "Koneksi Bermasalah";
-  } else {
-    badge.style.background = "#fef3c7";
-    badge.style.color = "#92400e";
-    dot.style.background = "#d97706";
-    text.innerText = pesan || "Belum Terhubung";
+  if (badge && dot && text) {
+    if (status === "connected") {
+      badge.style.background = "#dcfce7";
+      badge.style.color = "#166534";
+      dot.style.background = "#22c55e";
+      text.innerText = pesan || "Terhubung ke Supabase";
+    } else if (status === "error") {
+      badge.style.background = "#fee2e2";
+      badge.style.color = "#991b1b";
+      dot.style.background = "#ef4444";
+      text.innerText = pesan || "Koneksi Bermasalah";
+    } else {
+      badge.style.background = "#fef3c7";
+      badge.style.color = "#92400e";
+      dot.style.background = "#d97706";
+      text.innerText = pesan || "Belum Terhubung";
+    }
   }
+
+  // Indikator Top Header Bar
+  const topBadge = document.getElementById("top-supabase-badge");
+  const topDot = document.getElementById("top-supabase-dot");
+  const topText = document.getElementById("top-supabase-text");
+  if (topBadge && topDot && topText) {
+    if (status === "connected") {
+      topBadge.style.background = "#dcfce7";
+      topBadge.style.color = "#166534";
+      topDot.style.background = "#22c55e";
+      topText.innerText = "☁️ Supabase Cloud: Aktif";
+    } else if (status === "error") {
+      topBadge.style.background = "#fee2e2";
+      topBadge.style.color = "#991b1b";
+      topDot.style.background = "#ef4444";
+      topText.innerText = "☁️ Supabase: Terputus";
+    } else {
+      topBadge.style.background = "#fef3c7";
+      topBadge.style.color = "#92400e";
+      topDot.style.background = "#d97706";
+      topText.innerText = "☁️ Supabase: Offline";
+    }
+  }
+
+  // Indikator Dashboard Widget
+  const dashBadgeText = document.getElementById("dash-supabase-badge-text");
+  const dashBadgeDot = document.getElementById("dash-supabase-badge-dot");
+  if (dashBadgeText && dashBadgeDot) {
+    if (status === "connected") {
+      dashBadgeDot.style.background = "#22c55e";
+      dashBadgeText.innerText = "Terhubung (PostgreSQL Cloud)";
+    } else if (status === "error") {
+      dashBadgeDot.style.background = "#ef4444";
+      dashBadgeText.innerText = "Koneksi Terputus";
+    } else {
+      dashBadgeDot.style.background = "#d97706";
+      dashBadgeText.innerText = "Offline";
+    }
+  }
+}
+
+// Navigasi cepat langsung ke Tab Cloud Sync di Pengaturan
+function bukaTabCloudSyncLangsung(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  if (typeof pindahHalaman === "function") {
+    pindahHalaman("pengaturan");
+  }
+  const btn = document.getElementById("btn-tab-cloud-sync");
+  if (typeof bukaTabPengaturan === "function") {
+    bukaTabPengaturan("tab-cloud-sync", btn);
+  }
+}
+if (typeof window !== "undefined") {
+  window.bukaTabCloudSyncLangsung = bukaTabCloudSyncLangsung;
 }
 
 // 1. Sinkronisasi Batch (Stok & Expired)

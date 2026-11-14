@@ -90,6 +90,7 @@
         <li><a data-target="analitik-ai" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/><circle cx="19" cy="9" r="1.5"/></svg></span><span class="nav-label">Analitik AI</span></a></li>
         <li><a data-target="laporan" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg></span><span class="nav-label">Laporan Rekapitulasi</span></a></li>
         <li><a data-target="notif-bot" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span><span class="nav-label">Notifikasi Bot</span></a></li>
+        <li id="nav-item-cloud-sync"><a onclick="bukaTabCloudSyncLangsung(event)" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></span><span class="nav-label">Sinkronisasi Cloud</span></a></li>
         <li><a data-target="pengaturan" role="button" tabindex="0"><span class="nav-icon"><svg class="modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="nav-label">Pengaturan</span></a></li>
       </ul>
     </nav>
@@ -104,6 +105,10 @@
         <p class="greeting-sub">Sistem Manajemen Inventaris &amp; Pemantauan Kedaluwarsa Real-Time</p>
       </div>
       <div class="top-bar-right">
+        <div class="top-pill-item cloud-pill" id="top-supabase-badge" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 0.82rem; font-weight: 600; background: #dcfce7; color: #166534;" onclick="bukaTabCloudSyncLangsung(event)" title="Status Sinkronisasi Cloud Supabase (Klik untuk kelola)">
+          <span id="top-supabase-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block;"></span>
+          <span id="top-supabase-text">☁️ Supabase Cloud: Aktif</span>
+        </div>
         <div class="top-pill-item date-pill">
           <svg class="modern-icon" style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           <span id="top-current-date">11 Nov 2026</span>
@@ -136,6 +141,33 @@
           <p class="section-sub">Pemantauan metrik stok, kedaluwarsa, dan dampak penyelamatan pangan</p>
         </div>
       </header>
+
+      <!-- WIDGET STATUS SINKRONISASI SUPABASE CLOUD -->
+      <div id="dash-cloud-sync-widget" class="card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(240, 253, 244, 0.95), rgba(255, 255, 255, 0.98)); border: 1px solid #bbf7d0; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.08); padding: 18px 24px; border-radius: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 44px; height: 44px; border-radius: 12px; background: #dcfce7; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+            ☁️
+          </div>
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #0f172a;">Cloud Database Supabase</h3>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 12px; font-size: 0.76rem; font-weight: 600; background: #dcfce7; color: #166534;">
+                <span id="dash-supabase-badge-dot" style="width: 7px; height: 7px; border-radius: 50%; background: #22c55e;"></span>
+                <span id="dash-supabase-badge-text">Terhubung (PostgreSQL Cloud)</span>
+              </span>
+            </div>
+            <p style="margin: 4px 0 0 0; font-size: 0.84rem; color: #475569;">Sinkronisasi instan multi-perangkat aktif ke project <code style="background: rgba(0,0,0,0.05); padding: 2px 6px; border-radius: 4px; font-weight: 600; color: #047857;">hogrejhcoctnzjbtemuj</code></p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="tarikSemuaDataDariSupabase()" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem;">
+            📥 Tarik Data Cloud
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="bukaTabCloudSyncLangsung(event)" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem;">
+            ⚙️ Kelola Sinkronisasi
+          </button>
+        </div>
+      </div>
 
       <div class="card-grid bento-stats-grid">
         <!-- Stat Card 1 -->
@@ -1986,6 +2018,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-  <script src="Freshlog.js"></script>
+  <script src="Freshlog.js?v=20261114_cloud"></script>
 </body>
 </html>
