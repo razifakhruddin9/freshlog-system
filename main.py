@@ -139,63 +139,17 @@ os.makedirs(DATA_DIR, exist_ok=True)
 DAMPAK_PANGAN_FILE = os.path.join(DATA_DIR, "dampak_pangan.json")
 BATCHES_STATE_FILE = os.path.join(DATA_DIR, "batches_state.json")
 
-# Data Awal Standar Dampak Pangan (Sumber Data Tunggal)
-DEFAULT_DAMPAK_PANGAN = [
-    {
-        "id": "DP-20261102-001",
-        "batch_id": "BTC-001",
-        "produk": "Susu UHT 1L",
-        "qty_kg": 60.0,
-        "nilai_rupiah": 3000000,
-        "tipe": "TERSELAMATKAN",
-        "aksi": "TERJUAL",
-        "tanggal": "2026-11-02",
-        "waktu": "2026-11-02T10:15:00",
-        "user_id": "admin"
-    },
-    {
-        "id": "DP-20261105-002",
-        "batch_id": "BTC-002",
-        "produk": "Roti Tawar Daging",
-        "qty_kg": 120.0,
-        "nilai_rupiah": 6000000,
-        "tipe": "TERSELAMATKAN",
-        "aksi": "TERJUAL",
-        "tanggal": "2026-11-05",
-        "waktu": "2026-11-05T14:30:00",
-        "user_id": "staf1"
-    },
-    {
-        "id": "DP-20261108-003",
-        "batch_id": "BTC-003",
-        "produk": "Yogurt Stroberi",
-        "qty_kg": 86.0,
-        "nilai_rupiah": 4311000,
-        "tipe": "TERSELAMATKAN",
-        "aksi": "DONASI",
-        "tanggal": "2026-11-08",
-        "waktu": "2026-11-08T11:00:00",
-        "user_id": "admin"
-    },
-    {
-        "id": "DP-20261109-004",
-        "batch_id": "BTC-EX-99",
-        "produk": "Tahu Sumedang",
-        "qty_kg": 15.0,
-        "nilai_rupiah": 225000,
-        "tipe": "TIDAK_TERSELAMATKAN",
-        "aksi": "BUSUK",
-        "tanggal": "2026-11-09",
-        "waktu": "2026-11-09T16:45:00",
-        "user_id": "staf2"
-    }
-]
+# Data Awal Standar Dampak Pangan (Murni Data Riil)
+DEFAULT_DAMPAK_PANGAN = []
 
 def muat_dampak_pangan():
     if os.path.exists(DAMPAK_PANGAN_FILE):
         try:
             with open(DAMPAK_PANGAN_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                data = json.load(f)
+                if isinstance(data, list):
+                    # Bersihkan data demo jika masih tersimpan di file
+                    return [d for d in data if isinstance(d, dict) and not str(d.get("id", "")).startswith("DP-2026110")]
         except Exception:
             pass
     return list(DEFAULT_DAMPAK_PANGAN)
