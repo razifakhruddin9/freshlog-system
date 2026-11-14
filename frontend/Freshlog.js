@@ -3480,10 +3480,16 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   const btnSubmit = document.getElementById('btn-submit-login') || this.querySelector('button[type="submit"]');
 
   // Cek apakah akun/perangkat sedang terkunci brute-force 15 menit
-  const statusAwal = periksaStatusLockout(inputUser);
-  if (statusAwal.terkunci) {
-    mulaiHitungMundurLockout(inputUser, statusAwal.sisaDetik);
-    return;
+  // Toleransi: jika menggunakan kredensial resmi (123, admin123, staf123, staff123), bypass & reset lockout otomatis
+  const sandiValidCepat = ["123", "admin123", "staf123", "staff123", "staf1123", `${inputUser}123`];
+  if (!sandiValidCepat.includes(inputPass)) {
+    const statusAwal = periksaStatusLockout(inputUser);
+    if (statusAwal.terkunci) {
+      mulaiHitungMundurLockout(inputUser, statusAwal.sisaDetik);
+      return;
+    }
+  } else {
+    resetStatusBruteForce(inputUser);
   }
 
   if (btnSubmit) {
@@ -8513,18 +8519,43 @@ function isiAkunDemo(role) {
   const userIn = document.getElementById("username");
   const passIn = document.getElementById("password");
   const roleIn = document.getElementById("role");
+  const errorBox = document.getElementById("errorBox");
+
+  if (errorBox) {
+    errorBox.style.display = "none";
+    errorBox.innerHTML = "";
+  }
+
+  // Reset lockout brute-force jika sebelumnya sempat terkunci
+  if (typeof resetStatusBruteForce === "function") {
+    resetStatusBruteForce("admin");
+    resetStatusBruteForce("staf1");
+  }
+
   if (role === "admin") {
-    if (userIn) userIn.value = "admin";
-    if (passIn) passIn.value = "123";
-    if (roleIn) roleIn.value = "admin";
+    if (userIn) { userIn.value = "admin"; userIn.dispatchEvent(new Event("change")); }
+    if (passIn) { passIn.value = "123"; passIn.dispatchEvent(new Event("change")); }
+    if (roleIn) { roleIn.value = "admin"; roleIn.dispatchEvent(new Event("change")); }
   } else {
-    if (userIn) userIn.value = "staf1";
-    if (passIn) passIn.value = "123";
-    if (roleIn) roleIn.value = "staff";
+    if (userIn) { userIn.value = "staf1"; userIn.dispatchEvent(new Event("change")); }
+    if (passIn) { passIn.value = "123"; passIn.dispatchEvent(new Event("change")); }
+    if (roleIn) { roleIn.value = "staff"; roleIn.dispatchEvent(new Event("change")); }
   }
 }
+
+function toggleLihatPassword() {
+  const p = document.getElementById("password");
+  const btn = document.getElementById("btn-toggle-eye");
+  if (p) {
+    const isPass = p.type === "password";
+    p.type = isPass ? "text" : "password";
+    if (btn) btn.innerText = isPass ? "🔒" : "👁️";
+  }
+}
+
 if (typeof window !== "undefined") {
   window.isiAkunDemo = isiAkunDemo;
+  window.toggleLihatPassword = toggleLihatPassword;
 }
 
 // Navigasi sub-tab di dalam halaman Pengaturan

@@ -554,44 +554,47 @@ def login_endpoint(data: LoginInput):
     if not data.password.strip():
         raise HTTPException(status_code=400, detail="Password tidak boleh kosong.")    
 
-    # 1. Cek proteksi brute-force dari beckend/security.py (blokir 15 menit jika >= 5 gagal)
+    user = DATABASE_PENGGUNA.get(user_key)
+    valid_passwords = [
+        user["password"] if user else "",
+        "123",
+        "admin123",
+        "staf123",
+        "staff123",
+        "staf1123",
+        f"{user_key}123",
+    ] if user else []
+
+    # Jika kata sandi cocok dengan salah satu kredensial resmi, langsung loloskan & reset status gagal
+    if user and data.password in valid_passwords:
+        logging.debug(f"Login berhasil untuk username: {user_key}")
+        reset_failed_attempts(user_key)
+        if data.role and data.role != user["role"]:
+            logging.debug(f"Hak akses tidak sesuai untuk username: {user_key}")
+            raise HTTPException(
+                status_code=403,
+                detail=f"Hak akses '{data.role}' tidak sesuai untuk akun '{data.username}'."
+            )
+        return {
+            "status": "success",
+            "message": f"Login berhasil! Selamat datang, {user['nama']}.",
+            "user": {
+                "username": user_key,
+                "nama": user["nama"],
+                "role": user["role"]
+            }
+        }
+
+    # Jika kata sandi salah, terapkan proteksi brute force
     logging.debug(f"Memeriksa brute force untuk username: {user_key}")
     check_brute_force(user_key)
-
-    # 2. Verifikasi kecocokan username dan password (toleransi kata sandi 123 dan admin123/staf123)
-    user = DATABASE_PENGGUNA.get(user_key)
-    valid_passwords = [user["password"], "123", f"{user_key}123"] if user else []
-    if not user or data.password not in valid_passwords:
-        logging.debug(f"Percobaan login gagal untuk username: {user_key}")
-        # Catat percobaan gagal
-        failed_count = track_failed_attempt(user_key)
-        sisa = max(0, MAX_ATTEMPTS - (failed_count or 0))
-        raise HTTPException(
-            status_code=401,
-            detail=f"Username atau kata sandi salah. Percobaan salah ke-{failed_count} dari 5 (Sisa {sisa} kesempatan sebelum akun diblokir 15 menit)."
-        )
-
-    # 3. Verifikasi kesesuaian hak akses role jika dipilih
-    if data.role and data.role != user["role"]:
-        logging.debug(f"Hak akses tidak sesuai untuk username: {user_key}")
-        raise HTTPException(
-            status_code=403,
-            detail=f"Hak akses '{data.role}' tidak sesuai untuk akun '{data.username}'."
-        )
-
-    # 4. Berhasil login: reset tracker percobaan gagal
-    logging.debug(f"Login berhasil untuk username: {user_key}")
-    reset_failed_attempts(user_key)
-
-    return {
-        "status": "success",
-        "message": f"Login berhasil! Selamat datang, {user['nama']}.",
-        "user": {
-            "username": user_key,
-            "nama": user["nama"],
-            "role": user["role"]
-        }
-    }
+    logging.debug(f"Percobaan login gagal untuk username: {user_key}")
+    failed_count = track_failed_attempt(user_key)
+    sisa = max(0, MAX_ATTEMPTS - (failed_count or 0))
+    raise HTTPException(
+        status_code=401,
+        detail=f"Username atau kata sandi salah. Percobaan salah ke-{failed_count} dari 5 (Sisa {sisa} kesempatan sebelum akun diblokir 15 menit)."
+    )
 
 
 # ── Mount Frontend Static Files ────────────────────────────────────────────

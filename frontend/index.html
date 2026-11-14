@@ -30,7 +30,10 @@
           <!-- Input Password -->
           <div class="form-group">
               <label for="password">Kata Sandi</label>
-              <input type="password" id="password" placeholder="Masukkan kata sandi" required>
+              <div style="position: relative; display: flex; align-items: center;">
+                  <input type="password" id="password" placeholder="Masukkan kata sandi" required style="width: 100%; padding-right: 42px;">
+                  <button type="button" id="btn-toggle-eye" onclick="toggleLihatPassword()" style="position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 1.15rem; color: #64748b; padding: 4px;" title="Lihat / Sembunyikan Kata Sandi">👁️</button>
+              </div>
           </div>
 
           <!-- Pilihan Akses Role -->
@@ -2036,6 +2039,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-  <script src="Freshlog.js?v=20261114_v2"></script>
+  <script src="Freshlog.js?v=20261114_v3"></script>
 </body>
 </html>
