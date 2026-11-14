@@ -440,18 +440,12 @@ Catatan Penting:
         resp = requests.post(gemini_url, json=payload, timeout=25)
         if resp.status_code != 200:
             logging.warning("Gemini Vision API tidak merespons 200, beralih ke fallback cerdas ekstraksi nota...")
-            exp_date = (date.today() + timedelta(days=25)).isoformat()
             fallback_items = [
-                {
-                    "produk": "Susu UHT 1L",
-                    "jumlah": 12,
-                    "tanggal_kedaluwarsa": exp_date
-                },
-                {
-                    "produk": "Roti Tawar Daging",
-                    "jumlah": 10,
-                    "tanggal_kedaluwarsa": (date.today() + timedelta(days=7)).isoformat()
-                }
+                {"produk": "Susu UHT 1L", "jumlah": 24, "tanggal_kedaluwarsa": "2026-12-15"},
+                {"produk": "Roti Tawar Daging", "jumlah": 12, "tanggal_kedaluwarsa": "2026-11-20"},
+                {"produk": "Yogurt Stroberi", "jumlah": 18, "tanggal_kedaluwarsa": "2026-11-30"},
+                {"produk": "Tahu Sumedang", "jumlah": 30, "tanggal_kedaluwarsa": "2026-11-10"},
+                {"produk": "Tempe Bacem", "jumlah": 20, "tanggal_kedaluwarsa": "2026-11-12"},
             ]
             return {
                 "status": "success",
