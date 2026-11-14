@@ -8508,6 +8508,24 @@ function catatLogAktivitas(aksi, detail, kategori = "Sistem") {
   renderTabelLogAktivitas();
 }
 
+function isiAkunDemo(role) {
+  const userIn = document.getElementById("username");
+  const passIn = document.getElementById("password");
+  const roleIn = document.getElementById("role");
+  if (role === "admin") {
+    if (userIn) userIn.value = "admin";
+    if (passIn) passIn.value = "admin123";
+    if (roleIn) roleIn.value = "admin";
+  } else {
+    if (userIn) userIn.value = "staf1";
+    if (passIn) passIn.value = "staf123";
+    if (roleIn) roleIn.value = "staff";
+  }
+}
+if (typeof window !== "undefined") {
+  window.isiAkunDemo = isiAkunDemo;
+}
+
 // Navigasi sub-tab di dalam halaman Pengaturan
 function bukaTabPengaturan(panelId, btnEl) {
   const akunAktif = (typeof daftarAkun !== "undefined" && typeof activeUserKey !== "undefined") ? daftarAkun[activeUserKey] : null;
