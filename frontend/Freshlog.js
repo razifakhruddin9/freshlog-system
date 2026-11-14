@@ -6226,15 +6226,7 @@ async function loadGrafik() {
       });
     }
 
-    // 3. Baseline aktivitas harian toko agar visual bar proporsional dan dinamis
-    // jika pada hari tertentu belum ada transaksi manual yang dicatat
-    const baselineBeli = [20, 25, 20, 80, 22, 28, 25];
-    const baselineJual = [18, 22, 16, 45, 30, 24, 20];
-    sevenDays.forEach((day, idx) => {
-      if (day.pembelian === 0) day.pembelian = baselineBeli[idx];
-      if (day.penjualan === 0) day.penjualan = baselineJual[idx];
-    });
-
+    // 3. Murni 100% data transaksi riil (tanpa baseline dummy fiktif)
     const labels = sevenDays.map(d => d.label);
     const fullLabels = sevenDays.map(d => d.fullLabel);
     const dataBeli = sevenDays.map(d => d.pembelian);
