@@ -1361,6 +1361,10 @@ form label {
   z-index: 1100;
 }
 
+.modal.active {
+  display: flex !important;
+}
+
 .modal-content {
   position: fixed;
   top: 50%;

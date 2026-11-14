@@ -6957,8 +6957,8 @@ function renderRekomendasiTindakanAI() {
       ? dataBatchDemo.find(b => b.code === batchKode || b.code === item.id)
       : null;
     const sisaStokBatch = batchObj ? (parseFloat(batchObj.stock) || 0) : (parseFloat(item.stok) || 0);
-    const statusBatch = batchObj && batchObj.status ? String(batchObj.status).toUpperCase() : "AKTIF";
-    const isFinal = statusBatch === "TERJUAL" || statusBatch === "DONASI" || statusBatch === "BUSUK" || (batchObj && (batchObj.is_final || (sisaStokBatch <= 0 && statusBatch !== "AKTIF")));
+    const statusBatch = batchObj && batchObj.status ? String(batchObj.status).toUpperCase() : (item.final_status || "AKTIF");
+    const isFinal = statusBatch === "TERJUAL" || statusBatch === "DONASI" || statusBatch === "BUSUK" || Boolean(item.is_final) || (batchObj && (batchObj.is_final || (sisaStokBatch <= 0 && statusBatch !== "AKTIF")));
 
     let areaAksiHTML = "";
     if (isFinal || sisaStokBatch <= 0) {
@@ -7286,15 +7286,47 @@ function terapkanFilterLaporanDampak() {
 let pendingAksiBatch = null;
 
 function bukaKonfirmasiAksiBatch(batchCode, aksi) {
-  const batchObj = (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo))
+  let batchObj = (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo))
     ? dataBatchDemo.find(b => b.code === batchCode)
     : null;
-  if (!batchObj) {
-    alert("Data batch tidak ditemukan!");
-    return;
+
+  // Jika batch belum ada di dataBatchDemo (misal dari kartu rekomendasi AI Gemini), cari di window.rekomendasiLLMList
+  if (!batchObj && window.rekomendasiLLMList && Array.isArray(window.rekomendasiLLMList)) {
+    const recItem = window.rekomendasiLLMList.find(r => r.batch === batchCode || r.id === batchCode);
+    if (recItem) {
+      batchObj = {
+        code: recItem.batch || batchCode,
+        name: recItem.produk || "Produk",
+        category: "Umum",
+        stock: parseFloat(recItem.stok) || 1,
+        expiry_date: new Date().toISOString().slice(0, 10),
+        status: "AKTIF"
+      };
+      if (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo)) {
+        dataBatchDemo.push(batchObj);
+        try { localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo)); } catch(e){}
+      }
+    }
   }
+
+  // Jika tetap belum ditemukan, buatkan object batch sementara agar modal aksi tetap responsif
+  if (!batchObj) {
+    batchObj = {
+      code: batchCode,
+      name: "Produk Inventaris",
+      category: "Umum",
+      stock: 1,
+      expiry_date: new Date().toISOString().slice(0, 10),
+      status: "AKTIF"
+    };
+    if (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo)) {
+      dataBatchDemo.push(batchObj);
+      try { localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo)); } catch(e){}
+    }
+  }
+
   const statusBatch = (batchObj.status || "AKTIF").toUpperCase();
-  if (statusBatch === "TERJUAL" || statusBatch === "DONASI" || statusBatch === "BUSUK") {
+  if (statusBatch === "TERJUAL" || statusBatch === "DONASI" || statusBatch === "BUSUK" || batchObj.is_final) {
     alert(`Batch ${batchCode} sudah berstatus final (${statusBatch}) dan tidak dapat diproses ulang.`);
     return;
   }
@@ -7319,14 +7351,21 @@ function bukaKonfirmasiAksiBatch(batchCode, aksi) {
     else { modalIcon.innerText = "❌"; modalIcon.style.background = "#fee2e2"; }
   }
   if (modalDesc) {
-    modalDesc.innerHTML = `Tandai batch ini <strong>${aksi}</strong>?<br>Stok akan berkurang <strong>${qty} kg</strong> dan tercatat di Dampak Pangan.`;
+    const satuan = (typeof formatSatuanProduk === "function") ? formatSatuanProduk(batchObj.name) : "unit";
+    modalDesc.innerHTML = `Tandai batch <strong>${batchCode}</strong> (${batchObj.name}) sebagai <strong>${aksi}</strong>?<br>Stok akan berkurang <strong>${qty} ${satuan}</strong> dan tercatat di Laporan Dampak Pangan.`;
   }
-  if (modal) modal.classList.add("active");
+  if (modal) {
+    modal.classList.add("active");
+    modal.style.display = "flex";
+  }
 }
 
 function tutupModalKonfirmasiAksiBatch() {
   const modal = document.getElementById("modal-konfirmasi-aksi-batch");
-  if (modal) modal.classList.remove("active");
+  if (modal) {
+    modal.classList.remove("active");
+    modal.style.display = "none";
+  }
   pendingAksiBatch = null;
 }
 
@@ -7334,7 +7373,25 @@ async function eksekusiAksiBatchKonfirmasi() {
   if (!pendingAksiBatch) return;
   const { batchCode, aksi, qty, produk } = pendingAksiBatch;
 
-  const batchObj = dataBatchDemo.find(b => b.code === batchCode);
+  let batchObj = (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo))
+    ? dataBatchDemo.find(b => b.code === batchCode)
+    : null;
+
+  if (!batchObj && window.rekomendasiLLMList && Array.isArray(window.rekomendasiLLMList)) {
+    const recItem = window.rekomendasiLLMList.find(r => r.batch === batchCode || r.id === batchCode);
+    if (recItem) {
+      batchObj = {
+        code: recItem.batch || batchCode,
+        name: recItem.produk || produk || "Produk",
+        category: "Umum",
+        stock: parseFloat(recItem.stok) || qty || 1,
+        expiry_date: new Date().toISOString().slice(0, 10),
+        status: "AKTIF"
+      };
+      if (Array.isArray(dataBatchDemo)) dataBatchDemo.push(batchObj);
+    }
+  }
+
   if (!batchObj) {
     alert("Batch tidak ditemukan.");
     tutupModalKonfirmasiAksiBatch();
@@ -7342,7 +7399,7 @@ async function eksekusiAksiBatchKonfirmasi() {
   }
 
   const statusSaatIni = (batchObj.status || "AKTIF").toUpperCase();
-  if (statusSaatIni === "TERJUAL" || statusSaatIni === "DONASI" || statusSaatIni === "BUSUK") {
+  if (statusSaatIni === "TERJUAL" || statusSaatIni === "DONASI" || statusSaatIni === "BUSUK" || batchObj.is_final) {
     alert(`Gagal: Batch ${batchCode} sudah berstatus ${statusSaatIni} sebelumnya (idempotent).`);
     tutupModalKonfirmasiAksiBatch();
     return;
@@ -7351,9 +7408,13 @@ async function eksekusiAksiBatchKonfirmasi() {
   // Cari perkiraan harga dari master produk / productDatabase
   let hargaProduk = 18000;
   if (typeof masterProdukList !== "undefined" && Array.isArray(masterProdukList)) {
-    const prodMaster = masterProdukList.find(p => p.nama === produk);
+    const prodMaster = masterProdukList.find(p => p.nama === produk || p.nama === batchObj.name);
     if (prodMaster && prodMaster.hargaJual) hargaProduk = parseFloat(prodMaster.hargaJual);
+  } else if (typeof productDatabase !== "undefined") {
+    const pEntry = Object.values(productDatabase).find(p => p.name === produk || p.name === batchObj.name);
+    if (pEntry && pEntry.price) hargaProduk = parseFloat(pEntry.price);
   }
+
   const nilaiRupiah = Math.round(qty * hargaProduk);
   const tipeDampak = (aksi === "BUSUK") ? "TIDAK_TERSELAMATKAN" : "TERSELAMATKAN";
   const userAktifKey = (typeof activeUserKey !== "undefined" && activeUserKey) ? activeUserKey : "admin";
@@ -7366,14 +7427,27 @@ async function eksekusiAksiBatchKonfirmasi() {
   batchObj.status = aksi;
   batchObj.is_final = true;
 
+  // Sinkronkan status pada window.rekomendasiLLMList jika ada
+  if (window.rekomendasiLLMList && Array.isArray(window.rekomendasiLLMList)) {
+    const recItem = window.rekomendasiLLMList.find(r => r.batch === batchCode || r.id === batchCode);
+    if (recItem) {
+      recItem.is_final = true;
+      recItem.final_status = aksi;
+    }
+  }
+
   // Simpan state batch ke localStorage
-  localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo));
+  if (typeof dataBatchDemo !== "undefined" && Array.isArray(dataBatchDemo)) {
+    try {
+      localStorage.setItem("freshlog_batches", JSON.stringify(dataBatchDemo));
+    } catch(e) {}
+  }
 
   // c. Simpan record ke tabel dampak_pangan
   const recordDampak = {
     id: `DP-${Date.now()}-${batchCode}`,
     batch_id: batchCode,
-    produk: produk,
+    produk: batchObj.name || produk,
     qty_kg: qty,
     nilai_rupiah: nilaiRupiah,
     tipe: tipeDampak,
@@ -7382,7 +7456,9 @@ async function eksekusiAksiBatchKonfirmasi() {
     waktu: nowIso,
     user_id: userAktifKey
   };
-  simpanDampakPanganRecord(recordDampak);
+  if (typeof simpanDampakPanganRecord === "function") {
+    simpanDampakPanganRecord(recordDampak);
+  }
 
   // Sync ke backend FastAPI (idempotent)
   try {
@@ -7392,7 +7468,7 @@ async function eksekusiAksiBatchKonfirmasi() {
       body: JSON.stringify({
         batch_id: batchCode,
         aksi: aksi,
-        produk: produk,
+        produk: batchObj.name || produk,
         qty_kg: qty,
         nilai_rupiah: nilaiRupiah,
         user_id: userAktifKey
@@ -7406,22 +7482,31 @@ async function eksekusiAksiBatchKonfirmasi() {
   tutupModalKonfirmasiAksiBatch();
 
   // 3. Tombol aksi HILANG setelah status final (re-render)
-  renderRekomendasiTindakanAI();
-  renderTabelInventaris();
-  updateDashboardSummary();
+  if (typeof renderRekomendasiTindakanAI === "function") renderRekomendasiTindakanAI();
+  if (typeof renderTabelInventaris === "function") renderTabelInventaris();
+  if (typeof updateDashboardSummary === "function") updateDashboardSummary();
 
   // Update Lokasi Dampak Pangan (Dashboard & Laporan)
-  renderDashboardDampakRingkas();
+  if (typeof renderDashboardDampakRingkas === "function") renderDashboardDampakRingkas();
   if (typeof terapkanFilterLaporan === "function") terapkanFilterLaporan();
 
   // Catat ke log aktivitas
   if (typeof catatLogAktivitas === "function") {
-    catatLogAktivitas("Aksi Akhir Batch", `Menandai batch ${batchCode} (${produk}) sebagai ${aksi} [${qty} kg, Rp ${nilaiRupiah.toLocaleString("id-ID")}]`, "Analitik AI");
+    catatLogAktivitas("Aksi Akhir Batch", `Menandai batch ${batchCode} (${batchObj.name || produk}) sebagai ${aksi} [${qty} unit, Rp ${nilaiRupiah.toLocaleString("id-ID")}]`, "Analitik AI");
   }
 
   // 4. Tampilkan toast sukses: "Batch tercatat sebagai [Terjual/Donasi/Busuk]"
   const labelAksi = (aksi === "BUSUK") ? "Busuk" : (aksi === "DONASI" ? "Donasi" : "Terjual");
-  tampilkanToast(`Batch tercatat sebagai ${labelAksi}`);
+  if (typeof tampilkanToast === "function") {
+    tampilkanToast(`Batch tercatat sebagai ${labelAksi}`);
+  }
+}
+
+// Bind secara eksplisit ke window agar dapat dipanggil dari inline HTML onclick
+if (typeof window !== "undefined") {
+  window.bukaKonfirmasiAksiBatch = bukaKonfirmasiAksiBatch;
+  window.tutupModalKonfirmasiAksiBatch = tutupModalKonfirmasiAksiBatch;
+  window.eksekusiAksiBatchKonfirmasi = eksekusiAksiBatchKonfirmasi;
 }
 
 // -----------------------------------------------------------------------------
