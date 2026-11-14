@@ -56,8 +56,9 @@ Pelaku UMKM di sektor ritel bahan pangan, bakery, produk susu (*dairy*), dan mak
 
 | Modul Fitur | Deskripsi Fungsionalitas |
 | :--- | :--- |
-| **Autentikasi & RBAC** | Pembagian hak akses antara **Admin Toko** (akses penuh) dan **Staf Toko/Kasir** (operasional harian), dilengkapi proteksi **Brute-Force Lockout 15 Menit** (maks. 5 percobaan gagal). |
-| **Dashboard & Dampak** | Tampilan *Quixotic Soft-Bento Grid* metrik KPI, tren omzet, status stok kritis H-7, serta kartu ringkasan dampak pangan (Terselamatkan vs Kerugian). |
+| **Autentikasi & RBAC** | Pembagian hak akses berbasis peran: **Admin Toko** (akses penuh) dan **Staf Toko/Kasir** (operasional harian), dilengkapi proteksi **Brute-Force Lockout 15 Menit** (maks. 5 percobaan gagal). Fitur Pembelian Barang Masuk dan Konfigurasi Cloud Sync Supabase diproteksi eksklusif untuk Admin. |
+| **Dashboard & Dampak** | Tampilan *Quixotic Soft-Bento Grid* metrik KPI, tren omzet, status stok kritis H-7, serta kartu ringkasan dampak pangan (Terselamatkan vs Kerugian) yang dihitung **murni 100% dari transaksi penjualan riil** secara real-time. |
+| **Cloud Database Supabase** | Integrasi database cloud PostgreSQL [Supabase](https://supabase.com/) secara dua arah (*Two-Way Sync*) untuk sinkronisasi otomatis multi-perangkat (Batch, Master Produk, Pembelian, Penjualan, dan Pengguna). Panel konfigurasi dan aksi sinkronisasi massal dikunci **khusus Admin Toko**. |
 | **Master Produk & FEFO** | Kelola master komoditas, SKU/Barcode, harga beli/jual standar, serta urutan batch terurut dari kedaluwarsa terdekat. Tombol penambahan master produk dikhususkan untuk role Admin. |
 | **Kasir POS Otomatis FEFO** | Pemindaian barcode produk, keranjang belanja interaktif, kalkulator kembalian, pemotongan stok otomatis batch kedaluwarsa terdekat, serta pencetakan struk nota belanja. |
 | **Pembelian (Barang Masuk)** | Form pencatatan barang masuk dari pemasok dengan validasi hak akses **khusus Admin** (tersembunyi bagi role Staf), pencatatan nomor PO, harga beli, dan estimasi waktu sampai. |
@@ -65,7 +66,7 @@ Pelaku UMKM di sektor ritel bahan pangan, bakery, produk susu (*dairy*), dan mak
 | **Smart Input (OCR & Voice)** | Pindai nota/faktur fisik pemasok menggunakan **Gemini Vision OCR** dan input transaksi kasir cepat via pengenalan suara (**Web Speech API**). |
 | **Analitik Preskriptif AI** | Evaluasi risiko batch stok (Hijau/Kuning/Merah) dipadukan dengan rekomendasi model **Google Gemini Flash-Lite** untuk strategi diskon dinamis, donasi, atau pemusnahan. |
 | **Aksi Akhir Batch Atomik** | Eksekusi tombol tindakan penyelamatan pangan (*Terjual Diskon / Donasi / Buang*) dengan validasi modal konfirmasi yang langsung menyinkronkan status ke tabel dampak pangan secara idempoten. |
-| **Laporan Rekapitulasi** | Analisis performa multi-periode (Harian, Bulanan, Tahunan), filter per produk, metrik penyelamatan pangan terpadu, dan grafik tren interaktif Chart.js. |
+| **Laporan Rekapitulasi** | Analisis performa multi-periode (Harian, Bulanan, Tahunan), filter per produk, metrik penyelamatan pangan terpadu, dan grafik tren interaktif Chart.js berbasis data aktual. |
 | **Notifikasi Bot Telegram** | Peringatan otomatis real-time ke akun/grup Telegram manajer toko saat terdeteksi batch kritis mendekati expired atau stok menipis. |
 | **Pengaturan & Audit Trail** | Pengaturan profil pengguna, batas ambang (*threshold*) kedaluwarsa per produk, kustomisasi satuan & kategori, serta pencatatan audit log aktivitas seluruh pengguna. |
 
@@ -88,11 +89,13 @@ Pelaku UMKM di sektor ritel bahan pangan, bakery, produk susu (*dairy*), dan mak
 - **HTTP Client**: [Requests](https://requests.readthedocs.io/) — Komunikasi eksternal ke Telegram API dan Google Gemini API.
 
 ### 3. Persistensi Data
+- **Cloud Database (Supabase)**: Basis data PostgreSQL terkelola dengan Row Level Security (RLS) dan sinkronisasi REST API untuk data `batch`, `products`, `purchases`, `sales`, dan `users`. Dilengkapi skrip skema otomatis [`supabase_schema.sql`](supabase_schema.sql).
 - **Relasional Backend**: SQLite / PostgreSQL dengan transaksi ACID (*Single Source of Truth* untuk dampak pangan dan riwayat transaksi).
-- **State Client**: LocalStorage synchronizer untuk caching lokal dan mode operasional saat offline.
+- **State Client**: LocalStorage synchronizer untuk caching lokal dan kapabilitas operasional *offline-first*.
 
 ### 4. Layanan Pihak Ketiga & Cloud APIs
 - **Google Gemini API** (`gemini-flash-lite-latest` & Gemini Vision OCR) — Mesin pemrosesan bahasa alami untuk rekomendasi bisnis dan ekstraksi faktur fisik.
+- **Supabase Cloud REST API** — Sinkronisasi dua arah multi-perangkat real-time.
 - **Telegram Bot API** — Pengiriman alert notifikasi stok kedaluwarsa.
 - **UI-Avatars API** — Pembangkit avatar dinamis berdasarkan nama pengguna.
 
@@ -131,10 +134,12 @@ flowchart LR
     end
 
     subgraph DataLayer ["4. Data Persistence Layer"]
+        Supabase[("Cloud Database: Supabase PostgreSQL")]
         DB[("Database Relasional: PostgreSQL / SQLite")]
         TblBatch["Tabel: Batches & Products"]
         TblDampak["Tabel: Dampak Pangan (SSOT)"]
         TblUsers["Tabel: Users & Roles"]
+        TblSales["Tabel: Sales & Purchases"]
     end
 
     subgraph ExternalServices ["5. Layanan Eksternal (Cloud APIs)"]
@@ -143,9 +148,10 @@ flowchart LR
         TelegramAPI["Telegram Bot Gateway"]
     end
 
-    %% Relasi Client ke Gateway
+    %% Relasi Client ke Gateway & Cloud Sync
     UI --> JS
     JS <--> Store
+    JS <-- "Two-Way Cloud Sync (REST API)" --> Supabase
     JS -- "RESTful JSON / HTTPS" --> CORS
     CORS --> SecFilter --> RateLimit --> Router
 
@@ -158,6 +164,9 @@ flowchart LR
     DB --- TblBatch
     DB --- TblDampak
     DB --- TblUsers
+    Supabase --- TblBatch
+    Supabase --- TblSales
+    Supabase --- TblUsers
 
     %% Relasi ke External APIs
     DecisionEngine -- "Prompt Preskriptif" --> GeminiLLM
@@ -181,6 +190,7 @@ flowchart TD
     %% Alur Admin
     AdminPortal --> MasterProduk["Kelola Produk Master & Harga"]
     AdminPortal --> BeliMasuk["Input Pembelian Barang Masuk"]
+    AdminPortal --> CloudSync["Kelola Konfigurasi & Sinkronisasi Cloud Supabase"]
     AdminPortal --> RekapLaporan["Pantau Laporan Rekapitulasi"]
     
     %% Alur Staf
@@ -212,8 +222,8 @@ flowchart TD
 
 ### 2. Kloning Repositori
 ```bash
-git clone https://github.com/razifakhruddin9/freshlog.git
-cd freshlog
+git clone https://github.com/razifakhruddin9/freshlog-system.git
+cd freshlog-system
 ```
 
 ### 3. Pembuatan Virtual Environment
@@ -274,6 +284,15 @@ http://127.0.0.1:8000/
 ```
 *(Frontend dilayani langsung secara otomatis melalui mounting static files FastAPI).*
 
+### 8. Konfigurasi Sinkronisasi Cloud Supabase (Khusus Admin)
+FreshLog mendukung sinkronisasi database cloud PostgreSQL secara *two-way real-time* menggunakan [Supabase](https://supabase.com/):
+1. Masuk ke dashboard Supabase Anda ➔ Buka menu **SQL Editor**.
+2. Buka file [`supabase_schema.sql`](supabase_schema.sql) di repositori ini, salin seluruh kodenya, paste di SQL Editor Supabase, lalu klik **Run** untuk membuat tabel (`batch`, `products`, `purchases`, `sales`, `users`) dan aturan Row Level Security (RLS) secara instan.
+3. Buka antarmuka FreshLog di browser, masuk menggunakan akun **Admin** (`admin` / `123`).
+4. Navigasikan ke menu **Pengaturan** ➔ Pilih sub-tab **☁️ Sinkronisasi Supabase** (hanya terlihat dan dapat diakses oleh Admin).
+5. Masukkan **Supabase Project URL** dan **Anon API Key**, lalu klik **Uji Koneksi Database**.
+6. Klik tombol **🚀 Unggah Semua Data Lokal ke Supabase** untuk menyinkronkan seluruh master produk, stok batch, dan transaksi ke cloud secara terpadu.
+
 ---
 
 ## 🔑 Akun Demonstrasi (Demo Credentials)
@@ -282,8 +301,8 @@ Sistem FreshLog dilengkapi dengan akun simulasi siap pakai untuk mempermudah eva
 
 | Role Pengguna | Username | Password | Hak Akses Utama |
 | :--- | :--- | :--- | :--- |
-| **Admin Toko** | `admin` | `123` | Akses penuh ke seluruh menu: Kelola Produk Master, Pembelian Barang Masuk, Analitik Finansial, Konfigurasi Bot Telegram, Manajemen Akun Pengguna, dan Audit Log. |
-| **Staf Gudang 1** | `staf1` | `123` | Operasional kasir POS FEFO, input stok batch masuk, aksi penyelamatan pangan analitik AI. *(Menu Pembelian Barang Masuk disembunyikan)*. |
+| **Admin Toko** | `admin` | `123` | Akses penuh ke seluruh menu: Kelola Produk Master, Form Pembelian Barang Masuk, Konfigurasi & Aksi Sinkronisasi Cloud Supabase, Analitik Finansial, Konfigurasi Bot Telegram, Manajemen Akun Pengguna, dan Audit Log. |
+| **Staf Gudang 1** | `staf1` | `123` | Operasional kasir POS FEFO, input stok batch masuk, aksi penyelamatan pangan analitik AI. *(Menu Pembelian Barang Masuk dan Tab Sinkronisasi Supabase disembunyikan dan diproteksi secara otomatis)*. |
 | **Staf Gudang 2** | `staf2` | `123` | Operasional kasir shift sore/malam, monitoring kedaluwarsa batch, eksekusi tombol aksi akhir. |
 
 > 🔒 **Uji Coba Proteksi Brute-Force**: Jika kata sandi dimasukkan salah sebanyak 5 kali berturut-turut, sistem akan secara otomatis mengunci login (*lockout*) selama 15 menit dengan penghitung waktu mundur (*countdown timer*) real-time.
@@ -327,11 +346,12 @@ Seluruh pustaka, aset, dan kode pihak ketiga yang digunakan dalam pengembangan F
 
 3. **Layanan Eksternal**:
    - [Google Gemini API](https://ai.google.dev/) oleh Google DeepMind / Google Cloud.
+   - [Supabase](https://supabase.com/) oleh Supabase Inc. untuk PostgreSQL Cloud & PostgREST.
    - [Telegram Bot API](https://core.telegram.org/bots/api) oleh Telegram Messenger Inc.
    - [UI Avatars](https://ui-avatars.com/) untuk avatar inisial nama pengguna.
 
-4. **Data Pengujian**:
-   - Seluruh data inventaris, katalog produk, riwayat penjualan, dan transaksi yang disertakan dalam repositori ini merupakan **data sintetis/simulasi** untuk tujuan demonstrasi sistem.
+4. **Integritas Data & Pengujian**:
+   - Seluruh metrik analitik pangan, riwayat penjualan kasir, dan pergerakan stok batch diproses secara **real-time** berdasarkan data transaksi penggunaan aktual, bebas dari injeksi data dummy/simulasi statis. Database juga siap disinkronkan langsung ke cloud Supabase secara dua arah.
 
 ---
 
